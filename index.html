@@ -1,0 +1,2889 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081527">
+  <meta name="description" content="GOOD AYNI NOVA — AYNI-ANALOG: Sistema satelital de análisis y comparación de terrenos análogos terrestres con la Luna y Marte.">
+  <title>GOOD AYNI NOVA | AYNI-ANALOG · NASA Space Apps Challenge 2026</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    :root {
+      --bg: #071327;
+      --panel: #0d2038;
+      --panel2: #122943;
+      --line: #25425a;
+      --white: #f3f8ff;
+      --muted: #adbed2;
+      --cyan: #4de2e3;
+      --gold: #f8ba65;
+      --green: #6ce0b5;
+      --danger: #ff7b7b;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--white);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1240px, 94%); margin: auto; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #071327ef;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      min-height: 68px;
+    }
+    .brand { font-weight: 850; letter-spacing: .12em; font-size: 1.05rem; }
+    .brand span { color: var(--cyan); }
+    nav { display: flex; align-items: center; gap: 20px; }
+    nav a { font-size: .88rem; color: var(--muted); transition: color .2s; }
+    nav a:hover { color: var(--cyan); }
+    .nav-cta, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid var(--cyan);
+      background: var(--cyan);
+      color: #052331;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: .88rem;
+      cursor: pointer;
+      transition: filter .15s, transform .1s;
+    }
+    .btn.alt {
+      background: #102a45;
+      color: var(--white);
+      border-color: #466985;
+    }
+    .btn.warn {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #231503;
+    }
+    .btn.green {
+      background: var(--green);
+      border-color: var(--green);
+      color: #04261c;
+    }
+    .btn.danger {
+      background: #481d26;
+      border-color: var(--danger);
+      color: #ffd6d6;
+    }
+    .btn.sm {
+      padding: 7px 12px;
+      font-size: .8rem;
+      border-radius: 8px;
+    }
+    .btn:hover { filter: brightness(1.12); }
+    .btn:active { transform: translateY(1px); }
+
+    /* Botón de información (?) */
+    .help-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid var(--cyan);
+      background: #11344d;
+      color: var(--cyan);
+      font-weight: 900;
+      font-size: .76rem;
+      cursor: pointer;
+      margin-left: 5px;
+      vertical-align: middle;
+      transition: all .15s;
+      flex-shrink: 0;
+      padding: 0;
+      line-height: 1;
+    }
+    .help-btn:hover {
+      background: var(--cyan);
+      color: #042230;
+      transform: scale(1.1);
+    }
+    .help-btn.sm-q {
+      width: 18px;
+      height: 18px;
+      font-size: .68rem;
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 64px 0 56px;
+      background: radial-gradient(circle at 75% 35%, #19476b 0%, transparent 42%),
+                  linear-gradient(135deg, #0d1a34, #071327 70%);
+    }
+    .hero-content { position: relative; z-index: 2; max-width: 740px; }
+    .eyebrow {
+      color: var(--cyan);
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-size: .74rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.7rem);
+      line-height: 1.04;
+      letter-spacing: -.04em;
+      margin: 12px 0;
+    }
+    .hero h1 em { font-style: normal; color: var(--cyan); }
+    .hero p { max-width: 650px; color: #d4e2ee; font-size: 1.06rem; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+    .tag {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: #204358;
+      border: 1px solid #416b80;
+      border-radius: 99px;
+      padding: 6px 13px;
+      color: #c6f7f8;
+      font-size: .8rem;
+    }
+    .orb {
+      position: absolute;
+      right: 7%;
+      top: 16%;
+      font-size: 130px;
+      opacity: .18;
+      pointer-events: none;
+    }
+
+    section { padding: 52px 0; }
+    .section-title {
+      font-size: clamp(1.55rem, 3vw, 2.2rem);
+      letter-spacing: -.03em;
+      margin: 6px 0 10px;
+    }
+    .sub { color: var(--muted); max-width: 780px; margin-top: 0; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+    .card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(160deg, #122943, #0a1b2e);
+    }
+    .card .number { font-weight: 900; font-size: 1.75rem; color: var(--cyan); }
+    .card h3 { margin: 8px 0; }
+    .card p { color: var(--muted); font-size: .92rem; margin-bottom: 0; }
+
+    /* App section */
+    .app-section {
+      background: #091a2d;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    /* Banner de modo CSV activo */
+    .csv-active-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #2b2112;
+      border: 1.5px solid var(--gold);
+      color: #ffe3b8;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .csv-active-banner.show { display: flex; }
+
+    /* Dos Mapas Lado a Lado */
+    .worlds-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .world-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .world-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .quick-places {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .chip-btn {
+      background: #13304d;
+      border: 1px solid #355d82;
+      color: #d9eeff;
+      padding: 5px 10px;
+      border-radius: 99px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .chip-btn:hover, .chip-btn.active {
+      background: var(--cyan);
+      color: #042230;
+      border-color: var(--cyan);
+      font-weight: 700;
+    }
+    .map-canvas {
+      width: 100%;
+      height: 290px;
+      border-radius: 13px;
+      border: 1px solid #355977;
+      background: #06101e;
+      z-index: 1;
+      margin-bottom: 12px;
+    }
+
+    /* Cuadros de métricas de 4 puntos con icono (?) en cada uno */
+    .metrics-4 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px;
+      margin-top: 8px;
+    }
+    .stat-box {
+      background: #0b1b30;
+      border: 1px solid #244564;
+      border-radius: 10px;
+      padding: 9px 11px;
+    }
+    .stat-box small {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .73rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .stat-box strong { font-size: 1.03rem; color: var(--cyan); }
+
+    /* Etiquetas de zona Natural vs Poblada */
+    .zone-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: .74rem;
+      font-weight: 700;
+    }
+    .zone-badge.natural {
+      background: #113b2e;
+      border: 1px solid var(--green);
+      color: var(--green);
+    }
+    .zone-badge.populated {
+      background: #422c14;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    /* Barra de selección de criterios con icono (?) en cada tarjeta */
+    .criteria-bar {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 18px;
+    }
+    .criteria-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .check-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      border: 1.5px solid #2c4e6c;
+      background: #0a192c;
+      cursor: pointer;
+      user-select: none;
+      transition: all .15s;
+    }
+    .check-card.checked {
+      border-color: var(--cyan);
+      background: #11324d;
+    }
+    .check-card-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .check-card input[type=checkbox] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--cyan);
+      cursor: pointer;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .check-card div strong { display: block; font-size: .86rem; color: var(--white); }
+    .check-card div span { font-size: .74rem; color: var(--muted); display: block; }
+
+    /* Grid inferior */
+    .ranking-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .panel-box {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .rank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .rank-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      border: 1.5px solid #24435f;
+      background: #0a192c;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .rank-item:hover {
+      border-color: #4879a1;
+      background: #0f243c;
+    }
+    .rank-item.selected {
+      border-color: var(--cyan);
+      background: #12314b;
+      box-shadow: 0 0 0 1px var(--cyan);
+    }
+    .rank-pos {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #173753;
+      color: var(--cyan);
+      font-weight: 900;
+      font-size: .84rem;
+      display: grid;
+      place-content: center;
+      flex-shrink: 0;
+    }
+    .rank-item.selected .rank-pos {
+      background: var(--cyan);
+      color: #042230;
+    }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-info strong {
+      display: block;
+      font-size: .9rem;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rank-sub {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .rank-score {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .rank-score strong {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--cyan);
+      line-height: 1.1;
+    }
+    .rank-score small { font-size: .68rem; color: var(--muted); }
+
+    /* Panel de Informe de Observaciones (Debajo del Ranking) */
+    .report-notes-box {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .report-notes-box label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .88rem;
+      font-weight: 800;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .report-notes-box textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      background: #081628;
+      color: var(--white);
+      border: 1px solid #355878;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: .86rem;
+      line-height: 1.45;
+    }
+    .report-notes-box textarea:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+
+    /* Resultados detallados (Derecha) */
+    .result-top {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .score {
+      width: 106px;
+      height: 106px;
+      border-radius: 50%;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      border: 8px solid var(--cyan);
+      background: #15384a;
+      flex-shrink: 0;
+    }
+    .score strong { font-size: 2.05rem; line-height: 1; }
+    .score span { font-size: .64rem; color: #d4eef1; margin-top: 3px; }
+    .meter { margin: 11px 0; }
+    .meter-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: .84rem;
+    }
+    .bar {
+      margin-top: 5px;
+      background: #21384b;
+      height: 10px;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2c95c7, #5de5da);
+      transition: width .3s;
+    }
+
+    /* Gráfico comparativo lado a lado */
+    .compare-chart {
+      margin: 14px 0;
+      padding: 14px;
+      background: #09192b;
+      border: 1px solid #24435c;
+      border-radius: 13px;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 5px;
+    }
+    .cmp-row { margin: 9px 0; }
+    .cmp-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .81rem;
+      margin-bottom: 4px;
+    }
+    .dual-bars { display: grid; gap: 4px; }
+    .dual-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .74rem;
+      color: var(--muted);
+    }
+    .dual-track {
+      flex: 1;
+      background: #172c40;
+      height: 8px;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .dual-fill-earth { height: 100%; background: #3b82f6; border-radius: 99px; transition: width .3s; }
+    .dual-fill-space { height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; }
+
+    .recommend {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid #3a7468;
+      border-radius: 12px;
+      background: #143c3b;
+    }
+    .recommend h4 { color: var(--green); margin: 0 0 5px; font-size: .9rem; }
+    .recommend p { margin: 0; color: #cfebe3; font-size: .85rem; }
+    .notice {
+      border-left: 3px solid var(--gold);
+      background: #3e301d72;
+      padding: 10px 14px;
+      color: #f7d5a9;
+      border-radius: 6px;
+      margin: 12px 0 0;
+      font-size: .83rem;
+    }
+
+    /* Barra de gestión de archivos CSV */
+    .csv-toolbar {
+      margin-top: 18px;
+      border: 1px solid #2d5270;
+      background: #0c1f36;
+      border-radius: 14px;
+      padding: 15px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .msg-box {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px 13px;
+      border-radius: 8px;
+      font-size: .85rem;
+      display: none;
+    }
+    .msg-box.ok { display: block; background: #133b2f; border: 1px solid var(--green); color: #d2fbee; }
+    .msg-box.err { display: block; background: #441c24; border: 1px solid var(--danger); color: #ffd4d4; }
+
+    /* MODALES / DIÁLOGOS */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 10, 22, 0.78);
+      backdrop-filter: blur(5px);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      width: min(630px, 100%);
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #0e223b;
+      border: 1.5px solid var(--cyan);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.6);
+    }
+    .modal-card.warn-modal { border-color: var(--gold); }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-head h3 { margin: 0; font-size: 1.16rem; color: var(--cyan); }
+    .modal-close {
+      background: transparent;
+      border: 1px solid #486b8a;
+      color: var(--white);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .modal-body p { color: #d8e7f5; font-size: .92rem; margin: 10px 0; }
+    .modal-body ul { padding-left: 20px; color: #c7dbed; font-size: .89rem; }
+    .modal-body li { margin: 6px 0; }
+    .modal-input {
+      width: 100%;
+      padding: 11px 13px;
+      background: #071426;
+      border: 1.5px solid #3c6285;
+      border-radius: 10px;
+      color: var(--white);
+      font-size: .94rem;
+      margin-top: 6px;
+    }
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+    .formula-box {
+      background: #071526;
+      border: 1px solid #2b5070;
+      border-radius: 11px;
+      padding: 12px 14px;
+      margin: 12px 0;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: .86rem;
+      color: var(--cyan);
+    }
+    .grid-9-demo {
+      display: grid;
+      grid-template-columns: repeat(3, 68px);
+      gap: 6px;
+      justify-content: center;
+      margin: 14px auto;
+      background: #081526;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #274766;
+      width: fit-content;
+    }
+    .grid-9-cell {
+      background: #132e4a;
+      border: 1px solid #355d84;
+      border-radius: 7px;
+      padding: 6px;
+      text-align: center;
+      font-size: .74rem;
+      color: #bad5ec;
+    }
+    .grid-9-cell.center {
+      background: #164859;
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 800;
+    }
+
+    .foot {
+      border-top: 1px solid var(--line);
+      padding: 32px 0;
+      color: var(--muted);
+    }
+    .links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .links a {
+      display: inline-block;
+      border: 1px solid #46647b;
+      border-radius: 11px;
+      padding: 10px 14px;
+      color: #dbeafa;
+      font-size: .88rem;
+    }
+    .links a:hover { border-color: var(--cyan); }
+
+    @media (max-width: 920px) {
+      nav a:not(.nav-cta) { display: none; }
+      .cards, .worlds-grid, .check-grid, .ranking-grid { grid-template-columns: 1fr; }
+      .orb { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#inicio">GOOD <span>AYNI</span> NOVA</a>
+    <nav>
+      <a href="#aplicativo">Laboratorio Satelital</a>
+      <a href="#metodologia">Metodología</a>
+      <a href="#fuentes">Fuentes NASA</a>
+      <button class="btn alt sm" type="button" onclick="openHelp('apis')">📡 Arquitectura y APIs</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- PORTADA -->
+  <div class="hero" id="inicio">
+    <div class="wrap">
+      <div class="hero-content">
+        <div class="eyebrow">🇵🇪 I.E. «Dos de Mayo» · Cajamarca, Perú · NASA Space Apps Challenge 2026</div>
+        <h1>De los Andes<br><em>a la Luna.</em></h1>
+        <p><strong>«Dos mundos, una misión».</strong> Plataforma de análisis topográfico satelital para identificar terrenos análogos en los Andes y el Perú frente a zonas de exploración en la Luna y Marte.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#aplicativo">🛰️ Iniciar Laboratorio AYNI-ANALOG</a>
+          <button class="btn alt" type="button" onclick="openHelp('calculo')">📐 Modelo de Cálculo Satelital</button>
+        </div>
+        <p><span class="tag">✦ Capas satelitales NASA GIBS / SRTM / LRO / MOLA · Asesora: Prof. Irene Salomé Romero Tucto</span></p>
+      </div>
+      <div class="orb">🌕</div>
+    </div>
+  </div>
+
+  <!-- APLICATIVO PRINCIPAL -->
+  <section id="aplicativo" class="app-section">
+    <div class="wrap">
+      <div class="app-header">
+        <div>
+          <div class="eyebrow">Sistema de Comparación Planetaria · v4.0</div>
+          <h2 class="section-title">
+            AYNI-ANALOG <span style="color:var(--cyan)">SatLab</span>
+            <button class="help-btn" type="button" onclick="openHelp('general')" title="Acerca de AYNI-ANALOG">?</button>
+          </h2>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn alt sm" type="button" onclick="triggerOpenCSV()">📂 Cargar CSV</button>
+          <input id="csvFileInput" type="file" accept=".csv,text/csv" style="display:none">
+          <button class="btn green sm" id="overwriteCsvTopBtn" type="button" style="display:none" onclick="overwriteLoadedCSV()">🔄 Sobrescribir CSV actual</button>
+          <button class="btn sm" type="button" onclick="openDownloadDialog()">💾 Guardar / Descargar CSV</button>
+        </div>
+      </div>
+
+      <!-- BANNER VISIBLE CUANDO HAY UN CSV CARGADO -->
+      <div class="csv-active-banner" id="csvActiveBanner">
+        <div>
+          <strong>📂 Archivo CSV activo: <span id="csvLoadedFilename">datos.csv</span></strong>
+          <div style="font-size:.82rem;color:#f5d096">
+            Puedes modificar los filtros o agregar nuevas observaciones y darle a <strong>«Sobrescribir CSV actual»</strong>. Para mover el puntero del mapa a otros lugares, cierra primero el CSV.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn green sm" type="button" onclick="overwriteLoadedCSV()">🔄 Sobrescribir CSV actual</button>
+          <button class="btn warn sm" type="button" onclick="closeLoadedCsv()">✕ Cerrar CSV y reactivar mapa</button>
+        </div>
+      </div>
+
+      <!-- DOS MUNDOS LADO A LADO: MAPA 1 (LUNA/MARTE) Y MAPA 2 (PERÚ) -->
+      <div class="worlds-grid">
+
+        <!-- MUNDO 1: LUNA / MARTE (NASA) -->
+        <div class="world-card">
+          <div>
+            <div class="world-head">
+              <div>
+                <span class="eyebrow">Mundo 1 · Escenario Planetario</span>
+                <h3 style="margin:3px 0 0;font-size:1.12rem">
+                  🌕🔴 Superficie de la Luna y Marte (NASA)
+                  <button class="help-btn" type="button" onclick="openHelp('mapaEspacial')" title="Información del mapa planetario">?</button>
+                </h3>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="chip-btn active" id="btnBodyMoon" type="button">🌕 Luna (LRO)</button>
+                <button class="chip-btn" id="btnBodyMars" type="button">🔴 Marte (Viking/MOLA)</button>
+              </div>
+            </div>
+
+            <div class="quick-places" id="spaceQuickBtns"></div>
+            <div id="spaceMap" class="map-canvas" aria-label="Mapa de la Luna y Marte"></div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <strong id="spaceTitle" style="color:var(--gold);font-size:1rem">Polo Sur Lunar · Cráter Shackleton (Artemis III)</strong>
+              <span class="zone-badge natural" id="spaceBodyBadge">🌕 Escenario Lunar (NASA)</span>
+            </div>
+            <div id="spaceCoords" style="font-size:.78rem;color:var(--muted);margin-top:2px">Coordenadas: Lat -85.0° · Lon 0.0°</div>
+            <!-- 4 CUADROS DE LA LUNA/MARTE CON (?) EN CADA UNO -->
+            <div class="metrics-4">
+              <div class="stat-box">
+                <small>
+                  <span>Desnivel / Cota ref.</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('sp_alt')" title="¿Cómo sale este valor de cota planetaria?">?</button>
+                </small>
+                <strong id="spAlt">4,200 m</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Inclinación / Pendiente</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('sp_slope')" title="¿Cómo sale este valor de pendiente planetaria?">?</button>
+                </small>
+                <strong id="spSlope">~10.9° (Índice: 31/100)</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Rugosidad del relieve</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('sp_rough')" title="¿Cómo sale este valor de rugosidad planetaria?">?</button>
+                </small>
+                <strong id="spRough">82 / 100</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Accesibilidad operativa</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('sp_access')" title="¿Cómo sale este valor de accesibilidad planetaria?">?</button>
+                </small>
+                <strong id="spAccess">28 / 100</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MUNDO 2: PERÚ / CAJAMARCA (SATÉLITE NASA TERRA ASTER + SRTM) -->
+        <div class="world-card">
+          <div>
+            <div class="world-head">
+              <div>
+                <span class="eyebrow">Mundo 2 · Terreno Análogo en Perú</span>
+                <h3 style="margin:3px 0 0;font-size:1.12rem">
+                  🇵🇪🛰️ Relieve Satelital NASA en Perú (SRTM / ASTER)
+                  <button class="help-btn" type="button" onclick="openHelp('mapaPeru')" title="Información del escáner satelital y filtro de zonas">?</button>
+                </h3>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="chip-btn active" id="layerAster" type="button">🌈 Relieve NASA</button>
+                <button class="chip-btn" id="layerPhoto" type="button">🌍 Vista Satelital</button>
+              </div>
+            </div>
+
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">
+              Haz clic en cualquier punto del mapa para escanear su relieve con radar <strong>NASA SRTM</strong> o selecciona un terreno del ranking inferior.
+            </div>
+            <div id="peruMap" class="map-canvas" aria-label="Mapa satelital del Perú"></div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <strong id="peruTitle" style="color:var(--cyan);font-size:1rem">Bosque de Piedras de Cumbe Mayo (Cajamarca)</strong>
+              <span class="zone-badge natural" id="peruZoneBadge">🏞️ Zona Natural Despoblada</span>
+            </div>
+            <div id="peruCoords" style="font-size:.78rem;color:var(--muted);margin-top:2px">Coordenadas: Lat -7.1895° · Lon -78.5740° · Fuente: NASA SRTM</div>
+            <!-- 4 CUADROS DEL PERÚ CON (?) EN CADA UNO -->
+            <div class="metrics-4">
+              <div class="stat-box">
+                <small>
+                  <span>Altitud real (NASA SRTM)</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('pe_alt')" title="¿Cómo se obtiene esta altitud satelital?">?</button>
+                </small>
+                <strong id="peAlt">3,510 m s.n.m.</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Inclinación medida</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('pe_slope')" title="¿Cómo se calcula esta inclinación y su índice?">?</button>
+                </small>
+                <strong id="peSlope">~7.7° (Índice: 22/100)</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Rugosidad del relieve</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('pe_rough')" title="¿Cómo se calcula la rugosidad del relieve?">?</button>
+                </small>
+                <strong id="peRough">62 / 100</strong>
+              </div>
+              <div class="stat-box">
+                <small>
+                  <span>Accesibilidad estimada</span>
+                  <button class="help-btn sm-q" type="button" onclick="openMetricDetail('pe_access')" title="¿Cómo se calcula la accesibilidad estimada?">?</button>
+                </small>
+                <strong id="peAccess">74 / 100</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SELECTOR DE CRITERIOS DE EVALUACIÓN CON (?) EN CADA TARJETA -->
+      <div class="criteria-bar">
+        <div class="criteria-top">
+          <div>
+            <strong style="font-size:1rem;color:var(--white)">
+              ☑️ Parámetros de Comparación Activos
+              <button class="help-btn" type="button" onclick="openHelp('criterios')" title="Cómo funciona la selección de parámetros">?</button>
+            </strong>
+            <div style="font-size:.81rem;color:var(--muted)">
+              Selecciona uno o varios criterios para recalcular y ordenar el ranking en tiempo real. Haz clic en <strong>(?)</strong> dentro de cada parámetro para ver su significado y fórmula.
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="criteriaPresetBtns">
+            <button class="chip-btn active" type="button" id="preset3Orig">⭐ Estándar (Pendiente + Rugosidad + Acceso)</button>
+            <button class="chip-btn" type="button" id="presetOnlySlope">📐 Solo Inclinación</button>
+            <button class="chip-btn" type="button" id="presetOnlyRough">🪨 Solo Rugosidad</button>
+            <button class="chip-btn" type="button" id="presetOnlyAccess">🚜 Solo Accesibilidad</button>
+            <button class="chip-btn" type="button" id="presetOnlyAlt">⛰️ Solo Altitud</button>
+          </div>
+        </div>
+
+        <div class="check-grid">
+          <label class="check-card checked" id="card_pendiente">
+            <div class="check-card-left">
+              <input type="checkbox" id="chk_pendiente" checked>
+              <div>
+                <strong>📐 Inclinación (Pendiente)</strong>
+                <span>Gradiente topográfico local</span>
+              </div>
+            </div>
+            <button class="help-btn sm-q" type="button" onclick="event.preventDefault();event.stopPropagation();openMetricDetail('param_pendiente')" title="¿Qué significa Inclinación (Pendiente) y cómo se compara?">?</button>
+          </label>
+
+          <label class="check-card checked" id="card_rugosidad">
+            <div class="check-card-left">
+              <input type="checkbox" id="chk_rugosidad" checked>
+              <div>
+                <strong>🪨 Rugosidad del relieve</strong>
+                <span>Irregularidad superficial</span>
+              </div>
+            </div>
+            <button class="help-btn sm-q" type="button" onclick="event.preventDefault();event.stopPropagation();openMetricDetail('param_rugosidad')" title="¿Qué significa Rugosidad del relieve y cómo se compara?">?</button>
+          </label>
+
+          <label class="check-card checked" id="card_accesibilidad">
+            <div class="check-card-left">
+              <input type="checkbox" id="chk_accesibilidad" checked>
+              <div>
+                <strong>🚜 Accesibilidad operativa</strong>
+                <span>Viabilidad logística de prueba</span>
+              </div>
+            </div>
+            <button class="help-btn sm-q" type="button" onclick="event.preventDefault();event.stopPropagation();openMetricDetail('param_accesibilidad')" title="¿Qué significa Accesibilidad operativa y cómo se compara?">?</button>
+          </label>
+
+          <label class="check-card" id="card_altitud">
+            <div class="check-card-left">
+              <input type="checkbox" id="chk_altitud">
+              <div>
+                <strong>⛰️ Altitud / Desnivel</strong>
+                <span>Cota topográfica (m s.n.m.)</span>
+              </div>
+            </div>
+            <button class="help-btn sm-q" type="button" onclick="event.preventDefault();event.stopPropagation();openMetricDetail('param_altitud')" title="¿Qué significa Altitud / Desnivel y cómo se compara?">?</button>
+          </label>
+        </div>
+      </div>
+
+      <!-- BLOQUE INFERIOR: RANKING + INFORME DE OBSERVACIONES (IZQUIERDA) Y DETALLE (DERECHA) -->
+      <div class="ranking-grid">
+
+        <!-- COLUMNA IZQUIERDA: RANKING ORDENADO + APARTADO DE INFORME DEBAJO -->
+        <div class="panel-box">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <div>
+                <div class="eyebrow">Ranking de Similitud en Perú</div>
+                <h3 style="margin:2px 0 0;font-size:1.16rem">
+                  🏆 Terrenos candidatos ordenados
+                  <button class="help-btn" type="button" onclick="openHelp('ranking')" title="Información del ranking y filtros">?</button>
+                </h3>
+              </div>
+              <span class="zone-badge natural" id="rankCountBadge">7 lugares</span>
+            </div>
+
+            <!-- FILTRO DE ZONAS -->
+            <div class="filter-row">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span style="font-size:.79rem;color:var(--muted);font-weight:700">Filtro:</span>
+                <button class="chip-btn active" type="button" data-zfilter="natural">🏞️ Solo Zonas Naturales</button>
+                <button class="chip-btn" type="button" data-zfilter="all">🌎 Mostrar Todo</button>
+                <button class="chip-btn" type="button" data-zfilter="populated">🏙️ Solo Zonas Pobladas</button>
+              </div>
+            </div>
+
+            <!-- ORDENAR LISTA -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:9px">
+              <span style="font-size:.79rem;color:var(--muted)">Ordenar por:</span>
+              <select id="sortOrderSelect" style="width:auto;padding:6px 10px;background:#08192c;color:white;border:1px solid #416585;border-radius:8px;font-size:.8rem">
+                <option value="sim_total">🏆 Mayor Similitud Total (criterios marcados)</option>
+                <option value="sim_pendiente">📐 Similitud en Pendiente</option>
+                <option value="sim_rugosidad">🪨 Similitud en Rugosidad</option>
+                <option value="sim_accesibilidad">🚜 Similitud en Accesibilidad</option>
+                <option value="sim_altitud">⛰️ Similitud en Altitud</option>
+                <option value="alt_desc">⛰️ Mayor Altitud (m s.n.m.)</option>
+                <option value="access_desc">✅ Mayor Accesibilidad</option>
+              </select>
+            </div>
+
+            <!-- Lista ordenada -->
+            <div class="rank-list" id="rankingContainer"></div>
+          </div>
+
+          <!-- PANEL DE INFORMACIÓN / INFORME DE OBSERVACIONES (DEBAJO DEL RANKING) -->
+          <div class="report-notes-box">
+            <label for="userReportText">
+              <span>📝 Informe y Observaciones del Análisis</span>
+              <small style="font-weight:400;color:var(--muted)">Se guarda y restaura íntegro con el CSV</small>
+            </label>
+            <textarea id="userReportText" placeholder="Escribe aquí tus observaciones sobre la comparación, características del terreno seleccionado o notas del experimento..."></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+              <button class="btn green sm" id="overwriteNotesBtn" type="button" style="display:none" onclick="overwriteLoadedCSV()">
+                🔄 Sobrescribir sobre el archivo CSV cargado
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: ANÁLISIS DETALLADO DEL TERRENO SELECCIONADO -->
+        <div class="panel-box">
+          <div>
+            <div class="result-top">
+              <div class="score">
+                <strong id="score">—</strong>
+                <span>SIMILITUD /100</span>
+              </div>
+              <div style="flex:1;min-width:200px">
+                <div class="eyebrow" id="activeCriteriaLabel">Evaluando: Pendiente, Rugosidad, Accesibilidad</div>
+                <h3 id="pairname" style="margin:4px 0;font-size:1.15rem">Cumbe Mayo ↔ Polo Sur Lunar</h3>
+                <p class="sub" id="summary" style="margin:4px 0;font-size:.86rem">Selecciona cualquier lugar del ranking para inspeccionar sus métricas.</p>
+              </div>
+            </div>
+
+            <div id="meters"></div>
+
+            <!-- Gráfico lado a lado -->
+            <div class="compare-chart">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+                <strong style="font-size:.85rem;color:var(--white)">📊 Comparación directa de métricas (0 a 100)</strong>
+                <div class="chart-legend">
+                  <span><i class="dot" style="background:#3b82f6"></i>Perú</span>
+                  <span><i class="dot" style="background:var(--gold)"></i>Luna / Marte</span>
+                </div>
+              </div>
+              <div id="sideBySideChart"></div>
+            </div>
+
+            <div class="recommend">
+              <h4>🔬 Protocolo de prueba sugerido en campo</h4>
+              <p id="experiment"></p>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+              <button class="btn green" id="overwriteMainBtn" type="button" style="flex:1;display:none" onclick="overwriteLoadedCSV()">
+                🔄 Sobrescribir CSV original
+              </button>
+              <button class="btn" id="downloadReportBtn" type="button" style="flex:1" onclick="openDownloadDialog()">
+                ⬇ Guardar Informe y Ranking en CSV
+              </button>
+            </div>
+            <div id="status" style="font-size:.8rem;color:var(--green);margin-top:6px"></div>
+
+            <div class="notice">
+              <strong>Alcance físico del modelo:</strong> el índice cuantifica la similitud geomorfológica superficial (pendiente, rugosidad, cota y acceso). No reproduce gravedad reducida, presión atmosférica, radiación ni propiedades electrostáticas del regolito.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BARRA DE ARCHIVOS CSV -->
+      <div class="csv-toolbar">
+        <div>
+          <strong style="color:var(--cyan);font-size:.92rem">🗄️ Gestión de Archivos de Datos (CSV)</strong>
+          <div style="font-size:.81rem;color:var(--muted)">
+            El archivo CSV guarda y restaura automáticamente: la zona de la Luna o Marte, los terrenos del Perú, <strong>los filtros/parámetros aplicados</strong> y <strong>todo el texto de observaciones</strong>.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn green sm" id="overwriteToolbarBtn" type="button" style="display:none" onclick="overwriteLoadedCSV()">🔄 Sobrescribir CSV actual</button>
+          <button class="btn alt sm" type="button" onclick="openDownloadDialog()">💾 Guardar como nuevo CSV</button>
+          <button class="btn sm" type="button" onclick="triggerOpenCSV()">📂 Cargar archivo CSV</button>
+          <button class="btn danger sm" id="closeCsvBtnToolbar" type="button" style="display:none" onclick="closeLoadedCsv()">✕ Cerrar CSV activo</button>
+        </div>
+        <div id="csvMsg" class="msg-box" role="alert"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- METODOLOGÍA CIENTÍFICA -->
+  <section id="metodologia">
+    <div class="wrap">
+      <div class="eyebrow">Documentación Técnica</div>
+      <h2 class="section-title">Metodología de Análisis Geomorfológico</h2>
+      <p class="sub">El modelo integra datos digitales de elevación por radar y cartografía planetaria mediante un índice ponderado transparente:</p>
+      <div class="cards">
+        <div class="card">
+          <div class="number">01</div>
+          <h3>Muestreo Satelital SRTM</h3>
+          <p>Cada coordenada terrestre consulta una matriz de 3×3 puntos (~90 m de paso) del modelo digital de elevación <strong>NASA SRTM</strong> para estimar pendiente física y desviación estándar de rugosidad.</p>
+        </div>
+        <div class="card">
+          <div class="number">02</div>
+          <h3>Discriminación de Zonas Urbanas</h3>
+          <p>El sistema verifica la presencia de infraestructura vial o urbana mediante geocodificación inversa (<em>OpenStreetMap</em>) para priorizar terrenos naturales libres de edificaciones.</p>
+        </div>
+        <div class="card">
+          <div class="number">03</div>
+          <h3>Índice de Similitud Multivariable</h3>
+          <p>Para cada parámetro activo se evalúa <code>Sᵢ = máx(0, 100 − 2·|Tierraᵢ − Espacioᵢ|)</code>, ordenando automáticamente las ubicaciones candidatas según su afinidad topográfica.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUENTES -->
+  <section id="fuentes">
+    <div class="wrap">
+      <div class="eyebrow">Ciencia Abierta</div>
+      <h2 class="section-title">Fuentes de Datos de la NASA</h2>
+      <div class="links">
+        <a href="https://www.earthdata.nasa.gov/" target="_blank" rel="noopener">NASA Earthdata (GIBS / Terra ASTER / SRTM) ↗</a>
+        <a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener">NASA Moon Trek (LRO WAC / LOLA) ↗</a>
+        <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener">NASA Mars Trek (Viking / MOLA) ↗</a>
+        <a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener">NASA POWER Project ↗</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <strong style="color:white">GOOD AYNI NOVA · «Dos mundos, una misión»</strong>
+    <p>Institución Educativa «Dos de Mayo» · Cajamarca, Perú · Asesora: Prof. Irene Salomé Romero Tucto</p>
+    <small>Aplicación desarrollada para el NASA Space Apps Challenge 2026.</small>
+  </div>
+</footer>
+
+<!-- ============================================================================
+     MODAL 1: DIÁLOGO PARA NOMBRAR EL ARCHIVO ANTES DE DESCARGAR EL CSV
+     ============================================================================ -->
+<div class="modal-backdrop" id="downloadModal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>💾 Guardar Informe, Filtros y Ranking en CSV</h3>
+      <button class="modal-close" type="button" onclick="closeDownloadDialog()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-top:0">
+        El nombre por defecto combina la <strong>zona específica de la Luna o Marte</strong> y el <strong>lugar donde está el puntero en Perú</strong>. Puedes editarlo libremente antes de descargar:
+      </p>
+      <label for="dlFilenameInput" style="font-size:.85rem;font-weight:700;color:var(--cyan);display:block;margin-top:10px">
+        Nombre del archivo (.csv):
+      </label>
+      <input type="text" id="dlFilenameInput" class="modal-input" value="">
+
+      <div style="margin-top:12px;padding:10px 12px;background:#081628;border:1px solid #294c6d;border-radius:10px;font-size:.82rem;color:#c5dcf0">
+        <div><strong>🪐 Zona espacial:</strong> <span id="dlModalTargetName">—</span></div>
+        <div><strong>📍 Lugar del puntero (Perú):</strong> <span id="dlModalPeruName">—</span></div>
+        <div><strong>☑️ Filtros que se guardarán:</strong> <span id="dlModalFiltersSummary">—</span></div>
+      </div>
+
+      <label for="dlModalNotesMirror" style="font-size:.85rem;font-weight:700;color:var(--cyan);display:block;margin-top:14px">
+        📝 Informe / Observaciones incluidas en el archivo:
+      </label>
+      <textarea id="dlModalNotesMirror" class="modal-input" style="min-height:90px;resize:vertical" placeholder="Escribe o edita aquí las observaciones del informe..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px">
+      <button class="btn alt sm" type="button" onclick="closeDownloadDialog()">Cancelar</button>
+      <button class="btn green sm" id="dlOverwriteBtnModal" type="button" style="display:none" onclick="overwriteLoadedCSV(true)">🔄 Sobrescribir archivo original</button>
+      <button class="btn sm" type="button" onclick="confirmDownloadCSV()">⬇ Descargar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL 2: DIÁLOGO CUANDO SE INTENTA MOVER EL PUNTERO CON UN CSV CARGADO
+     ============================================================================ -->
+<div class="modal-backdrop" id="csvLockedModal" role="dialog" aria-modal="true">
+  <div class="modal-card warn-modal">
+    <div class="modal-head">
+      <h3 style="color:var(--gold)">📂 Archivo CSV Cargado Actualmente</h3>
+      <button class="modal-close" type="button" onclick="closeCsvLockedModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>
+        Actualmente estás visualizando los datos del archivo CSV cargado (<strong id="lockedCsvNameLabel">archivo.csv</strong>).
+      </p>
+      <p>
+        Mientras un archivo CSV está abierto, el puntero del mapa está bloqueado para no alterar los datos cargados. <strong>Cierra primero el archivo CSV</strong> si deseas escanear nuevos puntos en el mapa.
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px">
+      <button class="btn alt sm" type="button" onclick="closeCsvLockedModal()">Seguir en el CSV</button>
+      <button class="btn warn sm" type="button" onclick="closeCsvAndProceedMap()">✕ Cerrar CSV y usar el mapa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL 3: ADVERTENCIA CUANDO EL USUARIO HACE CLIC EN UNA ZONA POBLADA / URBANA
+     ============================================================================ -->
+<div class="modal-backdrop" id="urbanModal" role="dialog" aria-modal="true">
+  <div class="modal-card warn-modal">
+    <div class="modal-head">
+      <h3 style="color:var(--gold)">⚠️ Zona Poblada / Urbana Detectada</h3>
+      <button class="modal-close" type="button" onclick="cancelUrbanPoint()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="urbanModalText">
+        El punto seleccionado cae dentro de una <strong>zona poblada o con edificaciones</strong>.
+      </p>
+      <p style="background:#2e2212;border:1px solid var(--gold);padding:10px 12px;border-radius:10px;color:#ffe2b5;font-size:.88rem">
+        Las edificaciones, calles y áreas urbanas alteran la medición del relieve satelital y reducen la validez del sitio como terreno análogo espacial.
+      </p>
+      <p><strong>¿Estás de acuerdo con mover el marcador aquí de todos modos?</strong></p>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px">
+      <button class="btn alt sm" type="button" onclick="cancelUrbanPoint()">🏞️ No, cancelar y mantener zonas naturales</button>
+      <button class="btn warn sm" type="button" onclick="confirmUrbanPoint()">✅ Sí, mover aquí (marcar como Zona Poblada)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL 4: VENTANAS DE INFORMACIÓN TÉCNICA (?) Y DETALLE DE CADA CUADRO
+     ============================================================================ -->
+<div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="helpModalTitle">💡 Información Técnica</h3>
+      <button class="modal-close" type="button" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="modal-body" id="helpModalBody"></div>
+    <div style="text-align:right;margin-top:16px">
+      <button class="btn sm" type="button" onclick="closeHelp()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  // ============================================================================
+  // 1. CATÁLOGO INICIAL DE SITIOS ESPACIALES (LUNA / MARTE) Y DEL PERÚ
+  // ============================================================================
+  const SPACE_TARGETS = [
+    {
+      id: 'moon_artemis',
+      cuerpo: 'Luna',
+      nombre: 'Polo Sur Lunar · Cráter Shackleton (Artemis III)',
+      shortName: 'Luna_Crater_Shackleton',
+      lat: -85.0, lon: 0.0, zoom: 3,
+      alt: 4200, deg: 10.9,
+      pendiente: 31, rugosidad: 82, accesibilidad: 28,
+      origen: 'NASA LRO / ARTEMIS III'
+    },
+    {
+      id: 'moon_apolo16',
+      cuerpo: 'Luna',
+      nombre: 'Tierras Altas de Descartes (Apolo 16)',
+      shortName: 'Luna_Descartes_Apolo16',
+      lat: -8.97, lon: 15.50, zoom: 4,
+      alt: 2400, deg: 9.1,
+      pendiente: 26, rugosidad: 78, accesibilidad: 35,
+      origen: 'NASA LRO / APOLO 16'
+    },
+    {
+      id: 'moon_apolo11',
+      cuerpo: 'Luna',
+      nombre: 'Mar de la Tranquilidad (Apolo 11)',
+      shortName: 'Luna_Mar_Tranquilidad_Apolo11',
+      lat: 0.67, lon: 23.47, zoom: 4,
+      alt: 600, deg: 2.8,
+      pendiente: 8, rugosidad: 28, accesibilidad: 72,
+      origen: 'NASA LRO / APOLO 11'
+    },
+    {
+      id: 'moon_tycho',
+      cuerpo: 'Luna',
+      nombre: 'Cráter Tycho (Tierras Altas del Sur)',
+      shortName: 'Luna_Crater_Tycho',
+      lat: -43.31, lon: -11.36, zoom: 4,
+      alt: 4700, deg: 13.3,
+      pendiente: 38, rugosidad: 90, accesibilidad: 20,
+      origen: 'NASA LRO / TYCHO'
+    },
+    {
+      id: 'mars_jezero',
+      cuerpo: 'Marte',
+      nombre: 'Cráter Jezero (Rover Perseverance)',
+      shortName: 'Marte_Crater_Jezero',
+      lat: 18.38, lon: 77.58, zoom: 4,
+      alt: 2500, deg: 5.6,
+      pendiente: 16, rugosidad: 58, accesibilidad: 48,
+      origen: 'NASA MOLA / PERSEVERANCE'
+    },
+    {
+      id: 'mars_gale',
+      cuerpo: 'Marte',
+      nombre: 'Monte Sharp · Cráter Gale (Rover Curiosity)',
+      shortName: 'Marte_Crater_Gale_Monte_Sharp',
+      lat: -5.4, lon: 137.8, zoom: 4,
+      alt: 3800, deg: 8.4,
+      pendiente: 24, rugosidad: 68, accesibilidad: 40,
+      origen: 'NASA MOLA / CURIOSITY'
+    },
+    {
+      id: 'mars_olympus',
+      cuerpo: 'Marte',
+      nombre: 'Laderas de Olympus Mons (Marte)',
+      shortName: 'Marte_Olympus_Mons',
+      lat: 18.65, lon: -133.8, zoom: 3,
+      alt: 4900, deg: 10.2,
+      pendiente: 29, rugosidad: 80, accesibilidad: 30,
+      origen: 'NASA MOLA / VIKING'
+    }
+  ];
+
+  const DEFAULT_PERU_PLACES = [
+    {
+      id: 'pe_cumbemayo',
+      nombre: 'Bosque de Piedras de Cumbe Mayo (Cajamarca)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -7.1895, lon: -78.5740, alt: 3510, deg: 7.7,
+      pendiente: 22, rugosidad: 62, accesibilidad: 74,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_altoperu',
+      nombre: 'Puna Altoandina · Lagunas de Alto Perú (Cajamarca)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -6.9120, lon: -78.6050, alt: 3980, deg: 4.2,
+      pendiente: 12, rugosidad: 46, accesibilidad: 38,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_gavilan',
+      nombre: 'Laderas Cordilleranas del Abra El Gavilán (Cajamarca)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -7.2480, lon: -78.4720, alt: 3290, deg: 9.5,
+      pendiente: 27, rugosidad: 75, accesibilidad: 42,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_volcanes',
+      nombre: 'Terreno Volcánico · Valle de los Volcanes (Arequipa)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -15.7950, lon: -72.3400, alt: 3580, deg: 10.2,
+      pendiente: 29, rugosidad: 84, accesibilidad: 31,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_lajoya',
+      nombre: 'Desierto Hiperárido Pampas de La Joya (Arequipa)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -16.6900, lon: -71.8900, alt: 1260, deg: 3.1,
+      pendiente: 9, rugosidad: 32, accesibilidad: 76,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_ocucaje',
+      nombre: 'Desierto Rocoso de Ocucaje (Ica)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -14.3800, lon: -75.6700, alt: 520, deg: 5.2,
+      pendiente: 15, rugosidad: 54, accesibilidad: 55,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_pastoruri',
+      nombre: 'Meseta Glaciar de Pastoruri · Cordillera Blanca (Áncash)',
+      cuerpo: 'Tierra',
+      zona: 'natural',
+      lat: -9.9320, lon: -77.1950, alt: 4850, deg: 11.9,
+      pendiente: 34, rugosidad: 86, accesibilidad: 22,
+      origen: 'SATÉLITE NASA SRTM'
+    },
+    {
+      id: 'pe_urb_cajamarca',
+      nombre: 'Ciudad de Cajamarca · Centro Urbano',
+      cuerpo: 'Tierra',
+      zona: 'populated',
+      lat: -7.1617, lon: -78.5128, alt: 2750, deg: 2.1,
+      pendiente: 6, rugosidad: 25, accesibilidad: 92,
+      origen: 'ZONA URBANA / POBLADA'
+    },
+    {
+      id: 'pe_urb_banos',
+      nombre: 'Distrito de Baños del Inca · Zona Urbana (Cajamarca)',
+      cuerpo: 'Tierra',
+      zona: 'populated',
+      lat: -7.1638, lon: -78.4658, alt: 2667, deg: 2.5,
+      pendiente: 7, rugosidad: 28, accesibilidad: 90,
+      origen: 'ZONA URBANA / POBLADA'
+    }
+  ];
+
+  const KNOWN_URBAN_CENTERS = [
+    { name: 'Ciudad de Cajamarca', lat: -7.1617, lon: -78.5128, radiusKm: 4.2 },
+    { name: 'Zona Urbana de Baños del Inca', lat: -7.1638, lon: -78.4658, radiusKm: 2.2 },
+    { name: 'Lima Metropolitana', lat: -12.0464, lon: -77.0428, radiusKm: 22.0 },
+    { name: 'Ciudad de Arequipa', lat: -16.4090, lon: -71.5375, radiusKm: 8.5 },
+    { name: 'Ciudad de Trujillo', lat: -8.1116, lon: -79.0288, radiusKm: 7.0 },
+    { name: 'Ciudad de Chiclayo', lat: -6.7714, lon: -79.8409, radiusKm: 6.0 },
+    { name: 'Ciudad de Cusco', lat: -13.5320, lon: -71.9675, radiusKm: 5.5 }
+  ];
+
+  let peruPlaces = JSON.parse(JSON.stringify(DEFAULT_PERU_PLACES));
+  let selectedSpace = SPACE_TARGETS[0];
+  let selectedPeruId = 'pe_cumbemayo';
+  let currentZoneFilter = 'natural';
+  let pendingUrbanPoint = null;
+  let lastRankedList = [];
+
+  // Estado cuando hay un CSV cargado
+  let isCsvLoaded = false;
+  let loadedCsvFilename = '';
+  let currentFileHandle = null; // referencia directa al archivo en disco para sobrescribir sin duplicar
+  let pendingMapAction = null;
+
+  // ============================================================================
+  // 2. FÓRMULAS MATEMÁTICAS DE SIMILITUD Y ACTUALIZACIÓN DE FILTROS
+  // ============================================================================
+  // FÓRMULA 1: Similitud individual de una característica (de 0 a 100)
+  // Resta el valor del Perú (a) menos el valor de la Luna/Marte (b), multiplica la diferencia por 2 y se lo resta a 100.
+  // Ejemplo: si Perú tiene 84 de rugosidad y la Luna tiene 82 -> 100 - 2 * |84 - 82| = 96% de similitud.
+  function simMetric(a, b) {
+    return Math.max(0, 100 - Math.abs(Number(a) - Number(b)) * 2);
+  }
+
+  // FÓRMULA 2: Normalización y similitud de Altitud (pasa los metros de 0–5000 m a escala de 0–100)
+  function simAltitude(altEarth, altSpace) {
+    const a = Math.min(100, Math.max(0, (Number(altEarth || 2500) / 5000) * 100));
+    const b = Math.min(100, Math.max(0, (Number(altSpace || 2500) / 5000) * 100));
+    return simMetric(a, b);
+  }
+
+  function getActiveCriteria() {
+    const list = [];
+    if (document.getElementById('chk_pendiente').checked) list.push({ key: 'pendiente', label: 'Pendiente' });
+    if (document.getElementById('chk_rugosidad').checked) list.push({ key: 'rugosidad', label: 'Rugosidad' });
+    if (document.getElementById('chk_accesibilidad').checked) list.push({ key: 'accesibilidad', label: 'Accesibilidad' });
+    if (document.getElementById('chk_altitud').checked) list.push({ key: 'altitud', label: 'Altitud' });
+    return list;
+  }
+
+  // Sincroniza el botón rápido resaltado cuando el usuario marca/desmarca casillas manualmente
+  function syncPresetHighlight(activeCriteria) {
+    const keys = activeCriteria.map(c => c.key).sort().join(',');
+    document.getElementById('preset3Orig').classList.toggle('active', keys === 'accesibilidad,pendiente,rugosidad');
+    document.getElementById('presetOnlySlope').classList.toggle('active', keys === 'pendiente');
+    document.getElementById('presetOnlyRough').classList.toggle('active', keys === 'rugosidad');
+    document.getElementById('presetOnlyAccess').classList.toggle('active', keys === 'accesibilidad');
+    document.getElementById('presetOnlyAlt').classList.toggle('active', keys === 'altitud');
+  }
+
+  // FÓRMULA 3: Puntaje Total de Similitud combinando las casillas marcadas
+  function evaluatePlaceAgainstSpace(place, spaceTarget, activeCriteria) {
+    const sims = {
+      pendiente: simMetric(place.pendiente, spaceTarget.pendiente),
+      rugosidad: simMetric(place.rugosidad, spaceTarget.rugosidad),
+      accesibilidad: simMetric(place.accesibilidad, spaceTarget.accesibilidad),
+      altitud: simAltitude(place.alt, spaceTarget.alt)
+    };
+
+    if (activeCriteria.length === 0) return { total: 0, sims };
+
+    // Si están marcados los 3 originales (Pendiente, Rugosidad, Accesibilidad), aplica los pesos 40%, 40%, 20%.
+    // En cualquier otra combinación (1 sola casilla, 2 o las 4), calcula el promedio simple de las marcadas.
+    const keys = activeCriteria.map(c => c.key);
+    let total = 0;
+    if (keys.length === 3 && keys.includes('pendiente') && keys.includes('rugosidad') && keys.includes('accesibilidad')) {
+      total = (sims.pendiente * 40 + sims.rugosidad * 40 + sims.accesibilidad * 20) / 100;
+    } else {
+      total = keys.reduce((acc, k) => acc + sims[k], 0) / keys.length;
+    }
+
+    return { total, sims };
+  }
+
+  function updateAll(autoSelectTop = false) {
+    const activeCriteria = getActiveCriteria();
+    syncPresetHighlight(activeCriteria);
+
+    ['pendiente', 'rugosidad', 'accesibilidad', 'altitud'].forEach(k => {
+      const chk = document.getElementById('chk_' + k);
+      const card = document.getElementById('card_' + k);
+      if (chk && card) card.classList.toggle('checked', chk.checked);
+    });
+
+    let filtered = peruPlaces.filter(p => {
+      if (currentZoneFilter === 'natural') return p.zona !== 'populated';
+      if (currentZoneFilter === 'populated') return p.zona === 'populated';
+      return true;
+    });
+
+    const evaluated = filtered.map(p => {
+      const res = evaluatePlaceAgainstSpace(p, selectedSpace, activeCriteria);
+      return { ...p, score: res.total, sims: res.sims };
+    });
+
+    const sortMode = document.getElementById('sortOrderSelect').value;
+    evaluated.sort((a, b) => {
+      if (sortMode === 'sim_pendiente') return b.sims.pendiente - a.sims.pendiente;
+      if (sortMode === 'sim_rugosidad') return b.sims.rugosidad - a.sims.rugosidad;
+      if (sortMode === 'sim_accesibilidad') return b.sims.accesibilidad - a.sims.accesibilidad;
+      if (sortMode === 'sim_altitud') return b.sims.altitud - a.sims.altitud;
+      if (sortMode === 'alt_desc') return (b.alt || 0) - (a.alt || 0);
+      if (sortMode === 'access_desc') return b.accesibilidad - a.accesibilidad;
+      return b.score - a.score;
+    });
+
+    lastRankedList = evaluated;
+
+    if (autoSelectTop || !evaluated.some(p => p.id === selectedPeruId)) {
+      if (evaluated.length > 0) selectedPeruId = evaluated[0].id;
+    }
+
+    renderSpacePanel();
+    renderRankingList(evaluated);
+    renderComparisonDetail(evaluated, activeCriteria);
+  }
+
+  // ============================================================================
+  // 3. RENDERIZADO DE PANELES, RANKING Y GRÁFICOS
+  // ============================================================================
+  function renderSpacePanel() {
+    document.getElementById('spaceTitle').textContent = selectedSpace.nombre;
+    document.getElementById('spaceBodyBadge').textContent =
+      selectedSpace.cuerpo === 'Luna' ? '🌕 Escenario Lunar (NASA)' : '🔴 Escenario Marciano (NASA)';
+    document.getElementById('spaceCoords').textContent =
+      `Coordenadas: Lat ${selectedSpace.lat ?? 0}° · Lon ${selectedSpace.lon ?? 0}° · Fuente: ${selectedSpace.origen}`;
+    document.getElementById('spAlt').textContent = `${(selectedSpace.alt || 2500).toLocaleString('es-PE')} m`;
+    document.getElementById('spSlope').textContent = `~${selectedSpace.deg || (selectedSpace.pendiente * 0.35).toFixed(1)}° (Índice: ${selectedSpace.pendiente}/100)`;
+    document.getElementById('spRough').textContent = `${selectedSpace.rugosidad} / 100`;
+    document.getElementById('spAccess').textContent = `${selectedSpace.accesibilidad} / 100`;
+  }
+
+  function renderRankingList(evaluated) {
+    const container = document.getElementById('rankingContainer');
+    document.getElementById('rankCountBadge').textContent = `${evaluated.length} lugares`;
+
+    if (evaluated.length === 0) {
+      container.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted)">No hay lugares en esta categoría. Cambia el filtro a "Mostrar Todo" o "Solo Zonas Naturales".</div>`;
+      return;
+    }
+
+    container.innerHTML = evaluated.map((item, idx) => {
+      const isSel = item.id === selectedPeruId;
+      const isNatural = item.zona !== 'populated';
+      const badgeHtml = isNatural
+        ? `<span class="zone-badge natural">🏞️ Zona Natural</span>`
+        : `<span class="zone-badge populated">🏙️ Zona Poblada</span>`;
+
+      return `
+        <div class="rank-item ${isSel ? 'selected' : ''}" data-id="${item.id}">
+          <div class="rank-pos">#${idx + 1}</div>
+          <div class="rank-info">
+            <strong>${item.nombre}</strong>
+            <div class="rank-sub">
+              ${badgeHtml}
+              <span>Alt: ${(item.alt || 2500).toLocaleString('es-PE')} m</span>
+              <span>Pend: ${item.pendiente}</span>
+              <span>Rug: ${item.rugosidad}</span>
+              <span>Acc: ${item.accesibilidad}</span>
+            </div>
+          </div>
+          <div class="rank-score">
+            <strong>${item.score.toFixed(1)}%</strong>
+            <small>similitud</small>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.rank-item').forEach(el => {
+      el.addEventListener('click', () => {
+        selectedPeruId = el.dataset.id;
+        updateAll(false);
+        focusPeruMapOnSelected();
+      });
+    });
+  }
+
+  function getSelectedPeruObject() {
+    return lastRankedList.find(p => p.id === selectedPeruId) ||
+           peruPlaces.find(p => p.id === selectedPeruId) ||
+           lastRankedList[0] ||
+           peruPlaces[0];
+  }
+
+  function renderComparisonDetail(evaluated, activeCriteria) {
+    const s = evaluated.find(p => p.id === selectedPeruId) || evaluated[0];
+    if (!s) return;
+
+    document.getElementById('peruTitle').textContent = s.nombre;
+    const zBadge = document.getElementById('peruZoneBadge');
+    if (s.zona === 'populated') {
+      zBadge.className = 'zone-badge populated';
+      zBadge.textContent = '🏙️ Zona Poblada / Urbana';
+    } else {
+      zBadge.className = 'zone-badge natural';
+      zBadge.textContent = '🏞️ Zona Natural Despoblada';
+    }
+    document.getElementById('peruCoords').textContent =
+      s.lat !== undefined
+        ? `Coordenadas: Lat ${s.lat}° · Lon ${s.lon}° · Fuente: ${s.origen}`
+        : `Fuente: ${s.origen}`;
+    document.getElementById('peAlt').textContent = `${(s.alt || 2500).toLocaleString('es-PE')} m s.n.m.`;
+    document.getElementById('peSlope').textContent = `~${(s.deg || (s.pendiente * 0.35)).toFixed(1)}° (Índice: ${s.pendiente}/100)`;
+    document.getElementById('peRough').textContent = `${s.rugosidad} / 100`;
+    document.getElementById('peAccess').textContent = `${s.accesibilidad} / 100`;
+
+    document.getElementById('score').textContent = s.score.toFixed(1);
+    document.getElementById('activeCriteriaLabel').textContent =
+      activeCriteria.length > 0
+        ? 'Evaluando: ' + activeCriteria.map(c => c.label).join(' + ')
+        : '⚠️ Selecciona al menos un parámetro';
+    document.getElementById('pairname').textContent = `${s.nombre} ↔ ${selectedSpace.nombre}`;
+
+    document.getElementById('summary').textContent =
+      s.zona === 'populated'
+        ? '⚠️ Ubicación catalogada como Zona Poblada/Urbana. Se recomienda priorizar terrenos naturales despoblados.'
+        : s.score >= 75
+        ? '✅ Alta correspondencia topográfica en los parámetros seleccionados.'
+        : s.score >= 50
+        ? '⚠️ Correspondencia parcial: revisar diferencias específicas antes de diseñar pruebas.'
+        : '🔎 Baja similitud en los parámetros activos.';
+
+    const allAttrs = [
+      { key: 'pendiente', name: '📐 Inclinación (Pendiente)', eVal: s.pendiente, sVal: selectedSpace.pendiente },
+      { key: 'rugosidad', name: '🪨 Rugosidad del relieve', eVal: s.rugosidad, sVal: selectedSpace.rugosidad },
+      { key: 'accesibilidad', name: '🚜 Accesibilidad operativa', eVal: s.accesibilidad, sVal: selectedSpace.accesibilidad },
+      {
+        key: 'altitud',
+        name: '⛰️ Altitud / Cota (escala 0–5000 m)',
+        eVal: Math.min(100, Math.round(((s.alt || 2500) / 5000) * 100)),
+        sVal: Math.min(100, Math.round(((selectedSpace.alt || 2500) / 5000) * 100))
+      }
+    ];
+
+    const activeKeys = new Set(activeCriteria.map(c => c.key));
+
+    document.getElementById('meters').innerHTML = allAttrs.map(attr => {
+      const simVal = s.sims[attr.key];
+      const isChecked = activeKeys.has(attr.key);
+      return `
+        <div class="meter" style="opacity:${isChecked ? '1' : '0.42'}">
+          <div class="meter-title">
+            <span>${attr.name} ${isChecked ? '✅' : '(Omitido)'}</span>
+            <strong>Similitud: ${simVal.toFixed(1)} / 100</strong>
+          </div>
+          <div class="bar"><div class="fill" style="width:${simVal}%"></div></div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('sideBySideChart').innerHTML = allAttrs.map(attr => {
+      return `
+        <div class="cmp-row">
+          <div class="cmp-label">
+            <strong>${attr.name}</strong>
+            <span>Perú: <b>${attr.eVal}</b> vs. ${selectedSpace.cuerpo}: <b>${attr.sVal}</b></span>
+          </div>
+          <div class="dual-bars">
+            <div class="dual-bar-wrap">
+              <span style="width:58px">🇵🇪 Perú</span>
+              <div class="dual-track"><div class="dual-fill-earth" style="width:${attr.eVal}%"></div></div>
+              <span style="width:28px;text-align:right">${attr.eVal}</span>
+            </div>
+            <div class="dual-bar-wrap">
+              <span style="width:58px">${selectedSpace.cuerpo === 'Luna' ? '🌕 Luna' : '🔴 Marte'}</span>
+              <div class="dual-track"><div class="dual-fill-space" style="width:${attr.sVal}%"></div></div>
+              <span style="width:28px;text-align:right">${attr.sVal}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('experiment').textContent =
+      selectedSpace.cuerpo === 'Luna'
+        ? `En ${s.nombre}: evaluar tracción y ascenso en pendientes (~${(s.deg || 7).toFixed(1)}°) sobre sustrato natural sin edificaciones, contrastando con el perfil de ${selectedSpace.nombre}.`
+        : `En ${s.nombre}: ejecutar pruebas de navegación autónoma y superación de obstáculos rocosos comparables a ${selectedSpace.nombre}, registrando telemetría de estabilidad y consumo energético.`;
+  }
+
+  // ============================================================================
+  // 4. EXPLICACIÓN DINÁMICA DE CADA UNO DE LOS 8 CUADROS Y 4 PARÁMETROS (?)
+  // ============================================================================
+  function openMetricDetail(metricKey) {
+    const s = getSelectedPeruObject() || DEFAULT_PERU_PLACES[0];
+    const sp = selectedSpace;
+    const degPe = (s.deg || (s.pendiente * 0.35)).toFixed(1);
+    const degSp = (sp.deg || (sp.pendiente * 0.35)).toFixed(1);
+    const altPe = s.alt || 2500;
+    const altSp = sp.alt || 2500;
+    const altPeIdx = Math.min(100, Math.round((altPe / 5000) * 100));
+    const altSpIdx = Math.min(100, Math.round((altSp / 5000) * 100));
+
+    const details = {
+      // --- 4 CUADROS DEL PERÚ (DERECHA) ---
+      pe_alt: {
+        title: `⛰️ ¿Cómo sale la Altitud real de ${s.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--cyan);font-size:1.05rem">${altPe.toLocaleString('es-PE')} m s.n.m.</code></p>
+          <p><strong>¿De dónde se obtiene?</strong> Cuando colocas el puntero en las coordenadas <code>Lat ${s.lat ?? -7.1895}°, Lon ${s.lon ?? -78.5740}°</code>, la aplicación consulta por internet el modelo digital de elevación <strong>NASA SRTM (Shuttle Radar Topography Mission)</strong> a través de la API altimétrica.</p>
+          <div class="formula-box">
+            Cota central SRTM = ${altPe} metros sobre el nivel del mar<br>
+            Índice normalizado (0 a 5,000 m) = (${altPe} / 5000) × 100 = ${altPeIdx} / 100
+          </div>
+          <p>Este valor representa la elevación ortométrica exacta del punto central donde está ubicado el marcador en el Perú.</p>
+        `
+      },
+      pe_slope: {
+        title: `📐 ¿Cómo sale la Inclinación medida de ${s.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--cyan);font-size:1.05rem">~${degPe}° (Índice: ${s.pendiente}/100)</code></p>
+          <p><strong>¿Cómo se calcula?</strong> El sistema mide la altura del punto central y de sus <strong>8 puntos vecinos</strong> (situados a ~111 metros de distancia). Con la mayor diferencia de altura (<code>Δh</code>) calcula el ángulo trigonométrico de la pendiente:</p>
+          <div class="formula-box">
+            1. Ángulo en grados = arctan(Δh / 111 m) ≈ ${degPe}°<br>
+            2. Índice (escala 0° a 35° → 0 a 100) = (${degPe}° / 35°) × 100 ≈ ${s.pendiente} / 100
+          </div>
+          <p>Un índice cercano a <strong>0</strong> indica una pampa plana; un índice cercano a <strong>100</strong> indica una pared o ladera muy empinada (≥35°).</p>
+        `
+      },
+      pe_rough: {
+        title: `🪨 ¿Cómo sale la Rugosidad del relieve de ${s.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--cyan);font-size:1.05rem">${s.rugosidad} / 100</code></p>
+          <p><strong>¿Cómo se calcula?</strong> Se obtiene a partir de la <strong>desviación estándar de altura (σ)</strong> entre los 9 puntos de la cuadrícula satelital SRTM combinada con el gradiente local:</p>
+          <div class="formula-box">
+            Rugosidad = mín(100, Desviación_Estándar_9_puntos × 3.2 + Índice_Pendiente × 0.35)<br>
+            Resultado en este punto = ${s.rugosidad} / 100
+          </div>
+          <p>Si los 9 puntos vecinos tienen alturas casi iguales, el terreno es liso (rugosidad baja). Si las alturas suben y bajan bruscamente entre vecinos, el terreno es quebrado y rocoso (rugosidad alta).</p>
+        `
+      },
+      pe_access: {
+        title: `🚜 ¿Cómo sale la Accesibilidad estimada de ${s.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--cyan);font-size:1.05rem">${s.accesibilidad} / 100</code></p>
+          <p><strong>¿Cómo se calcula?</strong> Es un índice operativo que parte de 95 puntos y descuenta puntaje cuando la pendiente es muy pronunciada o cuando la altitud supera los 2,000 m s.n.m. (mayor dificultad logística y menor densidad de aire):</p>
+          <div class="formula-box">
+            Penalización por altitud = máx(0, (${altPe} m − 2000) / 55)<br>
+            Accesibilidad = 95 − (Pendiente × 0.55) − Penalización_Altitud ≈ ${s.accesibilidad} / 100
+          </div>
+          <p>Un valor alto indica que es más sencillo trasladar y operar un prototipo de rover en ese lugar.</p>
+        `
+      },
+
+      // --- 4 CUADROS DE LA LUNA / MARTE (IZQUIERDA) ---
+      sp_alt: {
+        title: `🪐 ¿Cómo sale el Desnivel / Cota de ${sp.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--gold);font-size:1.05rem">${altSp.toLocaleString('es-PE')} m</code></p>
+          <p><strong>¿De dónde proviene?</strong> En la Luna y Marte no existe el «nivel del mar», por lo que la NASA utiliza el <strong>datum topográfico planetario</strong> (altímetro láser <em>LOLA</em> en la Luna y <em>MOLA</em> en Marte) para medir el desnivel respecto al radio medio o al borde del cráter:</p>
+          <div class="formula-box">
+            Cota de referencia (${sp.origen}) = ${altSp} m<br>
+            Índice normalizado (0 a 5,000 m) = (${altSp} / 5000) × 100 = ${altSpIdx} / 100
+          </div>
+        `
+      },
+      sp_slope: {
+        title: `📐 ¿Cómo sale la Inclinación de ${sp.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--gold);font-size:1.05rem">~${degSp}° (Índice: ${sp.pendiente}/100)</code></p>
+          <p><strong>¿De dónde proviene?</strong> Representa la pendiente media característica reportada en los mapas topográficos de la misión (<strong>${sp.origen}</strong>), normalizada en la misma escala de 0° a 35° → 0 a 100 para poder compararla directamente con el Perú:</p>
+          <div class="formula-box">
+            Pendiente característica ≈ ${degSp}° → Índice = ${sp.pendiente} / 100
+          </div>
+        `
+      },
+      sp_rough: {
+        title: `🪨 ¿Cómo sale la Rugosidad de ${sp.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--gold);font-size:1.05rem">${sp.rugosidad} / 100</code></p>
+          <p><strong>¿Cómo se obtiene este ${sp.rugosidad}/100?</strong> Se calcula a partir de la variación topográfica local (bloques de roca y cráteres secundarios) medida por el altímetro láser de la NASA (<em>${sp.origen}</em>) combinada con la pendiente del sitio:</p>
+          <div class="formula-box">
+            Índice de irregularidad superficial + bloques (${sp.origen}) = ${sp.rugosidad} / 100
+          </div>
+          <p style="font-size:.85rem;color:var(--muted)">
+            <em>Nota aparte (comparación con Perú):</em> como este sitio tiene <strong>${sp.rugosidad}/100</strong> y ${s.nombre} tiene <strong>${s.rugosidad}/100</strong> (solo ${Math.abs(s.rugosidad - sp.rugosidad)} puntos de diferencia), el parecido entre ambos es del <strong>${simMetric(s.rugosidad, sp.rugosidad).toFixed(0)}%</strong>.
+          </p>
+        `
+      },
+      sp_access: {
+        title: `🚜 ¿Cómo sale la Accesibilidad operativa de ${sp.nombre}?`,
+        html: `
+          <p><strong>Valor actual en pantalla:</strong> <code style="color:var(--gold);font-size:1.05rem">${sp.accesibilidad} / 100</code></p>
+          <p><strong>¿Cómo se calcula este ${sp.accesibilidad}/100?</strong> Parte de una base operativa y descuenta puntaje según la inclinación (${sp.pendiente}/100) y la rugosidad (${sp.rugosidad}/100) del terreno planetario:</p>
+          <div class="formula-box">
+            Accesibilidad planetaria (${sp.origen}) = ${sp.accesibilidad} / 100
+          </div>
+          <p>Es menor en bordes escarpados como el Cráter Shackleton o Tycho, y mayor en llanuras abiertas como el Mar de la Tranquilidad.</p>
+        `
+      },
+
+      // --- 4 TARJETAS DE PARÁMETROS ACTIVOS (CHECKBOXES) ---
+      param_pendiente: {
+        title: '📐 Parámetro: Inclinación (Pendiente)',
+        html: `
+          <p><strong>¿Qué evalúa este filtro?</strong> Compara qué tan parecido es el ángulo de inclinación del terreno en el Perú frente al sitio elegido en la Luna o Marte.</p>
+          <div class="formula-box">
+            Perú (${s.nombre}): ${s.pendiente} / 100 (~${degPe}°)<br>
+            ${sp.cuerpo} (${sp.nombre}): ${sp.pendiente} / 100 (~${degSp}°)<br>
+            Similitud = 100 − 2 × |${s.pendiente} − ${sp.pendiente}| = ${simMetric(s.pendiente, sp.pendiente).toFixed(1)}%
+          </div>
+          <p>Es fundamental para poner a prueba el torque de los motores, la tracción de las ruedas y el centro de gravedad del rover en subidas y bajadas.</p>
+        `
+      },
+      param_rugosidad: {
+        title: '🪨 Parámetro: Rugosidad del relieve',
+        html: `
+          <p><strong>¿Qué evalúa este filtro?</strong> Compara la irregularidad superficial (presencia de rocas, grietas, desniveles bruscos y textura quebrada del suelo).</p>
+          <div class="formula-box">
+            Perú (${s.nombre}): ${s.rugosidad} / 100<br>
+            ${sp.cuerpo} (${sp.nombre}): ${sp.rugosidad} / 100<br>
+            Similitud = 100 − 2 × |${s.rugosidad} − ${sp.rugosidad}| = ${simMetric(s.rugosidad, sp.rugosidad).toFixed(1)}%
+          </div>
+          <p>Sirve para ensayar el sistema de suspensión (tipo <em>rocker-bogie</em>), amortiguación y esquiva de obstáculos del rover.</p>
+        `
+      },
+      param_accesibilidad: {
+        title: '🚜 Parámetro: Accesibilidad operativa',
+        html: `
+          <p><strong>¿Qué evalúa este filtro?</strong> Compara la viabilidad operativa y de tránsito sobre el terreno en función de su topografía y altitud.</p>
+          <div class="formula-box">
+            Perú (${s.nombre}): ${s.accesibilidad} / 100<br>
+            ${sp.cuerpo} (${sp.nombre}): ${sp.accesibilidad} / 100<br>
+            Similitud = 100 − 2 × |${s.accesibilidad} − ${sp.accesibilidad}| = ${simMetric(s.accesibilidad, sp.accesibilidad).toFixed(1)}%
+          </div>
+          <p>Permite planificar la logística de una misión de campo y definir rutas seguras para el despliegue del vehículo.</p>
+        `
+      },
+      param_altitud: {
+        title: '⛰️ Parámetro: Altitud / Desnivel',
+        html: `
+          <p><strong>¿Qué evalúa este filtro?</strong> Compara la cota topográfica en metros (escalada de 0 a 5,000 m → 0 a 100) entre el sitio terrestre y el desnivel de referencia del sitio planetario.</p>
+          <div class="formula-box">
+            Perú (${s.nombre}): ${altPe} m (Índice: ${altPeIdx}/100)<br>
+            ${sp.cuerpo} (${sp.nombre}): ${altSp} m (Índice: ${altSpIdx}/100)<br>
+            Similitud = 100 − 2 × |${altPeIdx} − ${altSpIdx}| = ${simAltitude(altPe, altSp).toFixed(1)}%
+          </div>
+          <p>Útil cuando se busca ensayar equipos en condiciones de alta montaña andina (puna y cordillera).</p>
+        `
+      }
+    };
+
+    const info = details[metricKey];
+    if (!info) return;
+    document.getElementById('helpModalTitle').textContent = info.title;
+    document.getElementById('helpModalBody').innerHTML = info.html;
+    document.getElementById('helpModal').classList.add('open');
+  }
+
+  // ============================================================================
+  // 5. MAPAS INTERACTIVOS (LUNA / MARTE Y PERÚ)
+  // ============================================================================
+  let spaceMap, spaceMarker, moonLayer, marsLayer;
+  let peruMap, peruMarker, nasaAsterLayer, satPhotoLayer;
+
+  function switchSpaceMapBody(cuerpo) {
+    const isMars = String(cuerpo).toLowerCase() === 'marte';
+    document.getElementById('btnBodyMoon').classList.toggle('active', !isMars);
+    document.getElementById('btnBodyMars').classList.toggle('active', isMars);
+
+    if (spaceMap && moonLayer && marsLayer) {
+      if (isMars) {
+        if (spaceMap.hasLayer(moonLayer)) spaceMap.removeLayer(moonLayer);
+        if (!spaceMap.hasLayer(marsLayer)) spaceMap.addLayer(marsLayer);
+      } else {
+        if (spaceMap.hasLayer(marsLayer)) spaceMap.removeLayer(marsLayer);
+        if (!spaceMap.hasLayer(moonLayer)) spaceMap.addLayer(moonLayer);
+      }
+    }
+    renderSpaceQuickButtons(isMars ? 'Marte' : 'Luna');
+  }
+
+  function renderSpaceQuickButtons(cuerpo) {
+    const container = document.getElementById('spaceQuickBtns');
+    const list = SPACE_TARGETS.filter(t => t.cuerpo === cuerpo);
+    container.innerHTML = list.map(t => `
+      <button class="chip-btn ${t.id === selectedSpace.id ? 'active' : ''}" type="button" data-spid="${t.id}">
+        ${t.cuerpo === 'Luna' ? '🌕' : '🔴'} ${t.nombre.split('·')[0].trim()}
+      </button>
+    `).join('');
+
+    container.querySelectorAll('.chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isCsvLoaded) {
+          openCsvLockedModal(() => {
+            const found = SPACE_TARGETS.find(x => x.id === btn.dataset.spid);
+            if (found) selectSpaceTarget(found, true);
+          });
+          return;
+        }
+        const found = SPACE_TARGETS.find(x => x.id === btn.dataset.spid);
+        if (found) selectSpaceTarget(found, true);
+      });
+    });
+  }
+
+  function selectSpaceTarget(targetObj, autoFocusPeru = true) {
+    selectedSpace = targetObj;
+    switchSpaceMapBody(selectedSpace.cuerpo);
+
+    if (spaceMap && spaceMarker) {
+      const lat = selectedSpace.lat ?? 0;
+      const lon = selectedSpace.lon ?? 0;
+      spaceMap.setView([lat, lon], selectedSpace.zoom || 3);
+      spaceMarker.setLatLng([lat, lon])
+        .bindPopup(`<b>${selectedSpace.nombre}</b><br>Cuerpo: ${selectedSpace.cuerpo}<br>Pendiente: ${selectedSpace.pendiente}/100 · Rugosidad: ${selectedSpace.rugosidad}/100`)
+        .openPopup();
+    }
+
+    updateAll(autoFocusPeru);
+    if (autoFocusPeru) focusPeruMapOnSelected();
+  }
+
+  function focusPeruMapOnSelected() {
+    const s = peruPlaces.find(p => p.id === selectedPeruId);
+    if (s && s.lat !== undefined && peruMap && peruMarker) {
+      peruMap.setView([s.lat, s.lon], 10);
+      const badgeTxt = s.zona === 'populated' ? '🏙️ Zona Poblada' : '🏞️ Zona Natural Despoblada';
+      peruMarker.setLatLng([s.lat, s.lon])
+        .bindPopup(`<b>${s.nombre}</b><br>${badgeTxt}<br>Altitud: ${s.alt || 2500} m · Similitud: <b>${(lastRankedList.find(x => x.id === s.id)?.score || 0).toFixed(1)}%</b>`)
+        .openPopup();
+    }
+  }
+
+  function initMaps() {
+    if (typeof L === 'undefined') return;
+
+    spaceMap = L.map('spaceMap', { preferCanvas: true }).setView([-20, 10], 2);
+
+    moonLayer = L.tileLayer(
+      'https://cartocdn-gusc.global.ssl.fastly.net/opmbuilder/api/v1/map/named/opm-moon-basemap-v0-1/all/{z}/{x}/{y}.png',
+      { maxZoom: 6, attribution: 'NASA LRO / OpenPlanetaryMap' }
+    );
+
+    marsLayer = L.tileLayer(
+      'https://cartocdn-gusc.global.ssl.fastly.net/opmbuilder/api/v1/map/named/opm-mars-basemap-v0-2/all/{z}/{x}/{y}.png',
+      { maxZoom: 6, attribution: 'NASA Viking / MOLA' }
+    );
+
+    moonLayer.addTo(spaceMap);
+    spaceMarker = L.marker([selectedSpace.lat, selectedSpace.lon]).addTo(spaceMap)
+      .bindPopup(`<b>${selectedSpace.nombre}</b>`).openPopup();
+
+    spaceMap.on('click', e => {
+      const lat = Number(e.latlng.lat.toFixed(2));
+      const lon = Number(e.latlng.lng.toFixed(2));
+
+      const applySpaceClick = () => {
+        const isMoon = document.getElementById('btnBodyMoon').classList.contains('active');
+        const cuerpo = isMoon ? 'Luna' : 'Marte';
+        const seed = Math.abs(Math.sin(lat * 0.13 + lon * 0.09));
+        const pend = Math.round(10 + seed * 32);
+        const rug = Math.round(25 + Math.abs(Math.cos(lat * 0.17 - lon * 0.11)) * 65);
+        const acc = Math.max(15, Math.round(90 - pend * 1.1 - rug * 0.35));
+        const alt = Math.round(800 + seed * 3800);
+
+        selectSpaceTarget({
+          id: 'custom_space',
+          cuerpo,
+          nombre: `Zona de ${cuerpo} (Lat ${lat}°, Lon ${lon}°)`,
+          shortName: `${cuerpo}_Lat${lat}_Lon${lon}`,
+          lat, lon, zoom: spaceMap.getZoom(),
+          alt,
+          deg: Number((pend * 0.35).toFixed(1)),
+          pendiente: pend,
+          rugosidad: rug,
+          accesibilidad: acc,
+          origen: `MAPA NASA ${cuerpo.toUpperCase()}`
+        }, true);
+      };
+
+      if (isCsvLoaded) {
+        openCsvLockedModal(applySpaceClick);
+        return;
+      }
+      applySpaceClick();
+    });
+
+    document.getElementById('btnBodyMoon').addEventListener('click', () => {
+      if (isCsvLoaded) {
+        openCsvLockedModal(() => selectSpaceTarget(SPACE_TARGETS.find(t => t.cuerpo === 'Luna'), true));
+        return;
+      }
+      selectSpaceTarget(SPACE_TARGETS.find(t => t.cuerpo === 'Luna'), true);
+    });
+
+    document.getElementById('btnBodyMars').addEventListener('click', () => {
+      if (isCsvLoaded) {
+        openCsvLockedModal(() => selectSpaceTarget(SPACE_TARGETS.find(t => t.cuerpo === 'Marte'), true));
+        return;
+      }
+      selectSpaceTarget(SPACE_TARGETS.find(t => t.cuerpo === 'Marte'), true);
+    });
+
+    peruMap = L.map('peruMap', { preferCanvas: true }).setView([-7.1895, -78.5740], 10);
+
+    nasaAsterLayer = L.tileLayer(
+      'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Color_Shaded_Relief/default/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpeg',
+      { maxNativeZoom: 12, maxZoom: 17, attribution: 'NASA GIBS / Terra ASTER GDEM' }
+    );
+
+    satPhotoLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 18, attribution: 'Imagen Satelital / NASA SRTM' }
+    );
+
+    nasaAsterLayer.addTo(peruMap);
+    peruMarker = L.marker([-7.1895, -78.5740]).addTo(peruMap);
+
+    document.getElementById('layerAster').addEventListener('click', () => {
+      document.getElementById('layerAster').classList.add('active');
+      document.getElementById('layerPhoto').classList.remove('active');
+      if (peruMap.hasLayer(satPhotoLayer)) peruMap.removeLayer(satPhotoLayer);
+      if (!peruMap.hasLayer(nasaAsterLayer)) peruMap.addLayer(nasaAsterLayer);
+    });
+
+    document.getElementById('layerPhoto').addEventListener('click', () => {
+      document.getElementById('layerPhoto').classList.add('active');
+      document.getElementById('layerAster').classList.remove('active');
+      if (peruMap.hasLayer(nasaAsterLayer)) peruMap.removeLayer(nasaAsterLayer);
+      if (!peruMap.hasLayer(satPhotoLayer)) peruMap.addLayer(satPhotoLayer);
+    });
+
+    peruMap.on('click', e => {
+      const lat = Number(e.latlng.lat.toFixed(4));
+      const lon = Number(e.latlng.lng.toFixed(4));
+      if (isCsvLoaded) {
+        openCsvLockedModal(() => inspectPeruPoint(lat, lon));
+        return;
+      }
+      inspectPeruPoint(lat, lon);
+    });
+
+    renderSpaceQuickButtons('Luna');
+    focusPeruMapOnSelected();
+  }
+
+  // ============================================================================
+  // 6. ESTADO DE MODO CSV CARGADO Y BOTÓN DE SOBRESCRIBIR
+  // ============================================================================
+  function setCsvLoadedState(active, filename = '') {
+    isCsvLoaded = active;
+    loadedCsvFilename = filename;
+    document.getElementById('csvActiveBanner').classList.toggle('show', active);
+    document.getElementById('csvLoadedFilename').textContent = filename || 'archivo.csv';
+
+    const showStyle = active ? 'inline-flex' : 'none';
+    document.getElementById('closeCsvBtnToolbar').style.display = showStyle;
+    document.getElementById('overwriteCsvTopBtn').style.display = showStyle;
+    document.getElementById('overwriteNotesBtn').style.display = showStyle;
+    document.getElementById('overwriteMainBtn').style.display = showStyle;
+    document.getElementById('overwriteToolbarBtn').style.display = showStyle;
+    document.getElementById('dlOverwriteBtnModal').style.display = showStyle;
+  }
+
+  function openCsvLockedModal(callbackAfterClose) {
+    pendingMapAction = callbackAfterClose || null;
+    document.getElementById('lockedCsvNameLabel').textContent = loadedCsvFilename || 'archivo.csv';
+    document.getElementById('csvLockedModal').classList.add('open');
+  }
+
+  function closeCsvLockedModal() {
+    pendingMapAction = null;
+    document.getElementById('csvLockedModal').classList.remove('open');
+  }
+
+  function closeLoadedCsv() {
+    setCsvLoadedState(false, '');
+    currentFileHandle = null;
+    peruPlaces = JSON.parse(JSON.stringify(DEFAULT_PERU_PLACES));
+    selectedSpace = SPACE_TARGETS[0];
+    document.getElementById('userReportText').value = '';
+    selectSpaceTarget(selectedSpace, true);
+    showCsvMsg('ok', '🔓 Archivo CSV cerrado. Los mapas interactivos están activos nuevamente.');
+  }
+
+  function closeCsvAndProceedMap() {
+    const action = pendingMapAction;
+    document.getElementById('csvLockedModal').classList.remove('open');
+    pendingMapAction = null;
+    closeLoadedCsv();
+    if (typeof action === 'function') action();
+  }
+
+  // ============================================================================
+  // 7. MATEMÁTICA DEL ESCÁNER SATELITAL SRTM (MATRIZ 3x3) Y DETECTOR URBANO
+  // ============================================================================
+  // Fórmula de Haversine: calcula la distancia en kilómetros entre dos coordenadas (Lat, Lon)
+  function distanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // Consulta 9 puntos satelitales (el centro + 8 vecinos a ~111 metros alrededor) en el radar NASA SRTM
+  async function inspectPeruPoint(lat, lon) {
+    const d = 0.001; // 0.001 grados de latitud/longitud equivale a ~111 metros en el terreno
+    const offsets = [[0,0],[d,0],[-d,0],[0,d],[0,-d],[d,d],[d,-d],[-d,d],[-d,-d]];
+    const lats = offsets.map(o => (lat + o[0]).toFixed(5)).join(',');
+    const lons = offsets.map(o => (lon + o[1]).toFixed(5)).join(',');
+
+    let altCenter = 2800, slopeScore = 20, roughScore = 50, accessScore = 65, deg = 7.0;
+
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+      if (res.ok) {
+        const data = await res.json();
+        const elevs = data.elevation;
+        if (Array.isArray(elevs) && elevs.length === 9) {
+          // 1. ALTITUD REAL: altura directa del punto central (en metros sobre el nivel del mar)
+          altCenter = Math.round(elevs[0]);
+
+          // 2. INCLINACIÓN / PENDIENTE: arco tangente del mayor desnivel (maxDiff) dividido entre 111 metros
+          const maxDiff = Math.max(...elevs.slice(1).map(h => Math.abs(h - elevs[0])));
+          deg = Math.atan(maxDiff / 111) * (180 / Math.PI);
+          // Escalamos de 0°–35° a un índice de 0 a 100
+          slopeScore = Math.min(100, Math.max(1, Math.round((deg / 35) * 100)));
+
+          // 3. RUGOSIDAD DEL RELIEVE: desviación estándar (stdDev) de las 9 alturas vecinas + aporte de pendiente
+          const mean = elevs.reduce((a, b) => a + b, 0) / 9;
+          const stdDev = Math.sqrt(elevs.reduce((a, b) => a + (b - mean) ** 2, 0) / 9);
+          roughScore = Math.min(100, Math.max(5, Math.round(stdDev * 3.2 + slopeScore * 0.35)));
+
+          // 4. ACCESIBILIDAD OPERATIVA: parte de 95 y resta puntos por alta pendiente y por altitud mayor a 2000 m
+          const altPenalty = Math.max(0, (altCenter - 2000) / 55);
+          accessScore = Math.min(98, Math.max(8, Math.round(95 - slopeScore * 0.55 - altPenalty)));
+        }
+      }
+    } catch (_) {}
+
+    let isUrban = false;
+    let placeName = `Terreno en Perú (${lat}°, ${lon}°)`;
+
+    for (const c of KNOWN_URBAN_CENTERS) {
+      if (distanceKm(lat, lon, c.lat, c.lon) <= c.radiusKm) {
+        isUrban = true;
+        placeName = `${c.name} (${lat}°, ${lon}°)`;
+        break;
+      }
+    }
+
+    try {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=15&accept-language=es`);
+      if (geoRes.ok) {
+        const geo = await geoRes.json();
+        const addr = geo.address || {};
+        const cat = (geo.category || '').toLowerCase();
+        const type = (geo.type || '').toLowerCase();
+
+        if (
+          addr.road || addr.suburb || addr.neighbourhood || addr.quarter ||
+          ['building', 'highway', 'shop', 'amenity', 'office', 'leisure'].includes(cat) ||
+          ['residential', 'city', 'town', 'village', 'commercial', 'industrial'].includes(type)
+        ) {
+          isUrban = true;
+        }
+
+        const locality = addr.suburb || addr.town || addr.city || addr.village || addr.county || addr.state || '';
+        if (locality) {
+          placeName = isUrban
+            ? `Zona Urbana en ${locality} (${lat}°, ${lon}°)`
+            : `Zona Natural en ${locality} (${lat}°, ${lon}°)`;
+        }
+      }
+    } catch (_) {}
+
+    const candidateObj = {
+      id: 'pe_custom_' + Date.now(),
+      nombre: placeName,
+      cuerpo: 'Tierra',
+      zona: isUrban ? 'populated' : 'natural',
+      lat, lon,
+      alt: altCenter,
+      deg: Number(deg.toFixed(1)),
+      pendiente: slopeScore,
+      rugosidad: roughScore,
+      accesibilidad: accessScore,
+      origen: isUrban ? 'SATÉLITE SRTM (ZONA POBLADA)' : 'SATÉLITE NASA SRTM (NATURAL)'
+    };
+
+    if (isUrban) {
+      pendingUrbanPoint = candidateObj;
+      document.getElementById('urbanModalText').innerHTML =
+        `El punto seleccionado corresponde a <strong>${placeName}</strong>, identificado como <strong>Zona Poblada / Urbana</strong>.`;
+      document.getElementById('urbanModal').classList.add('open');
+      return;
+    }
+
+    addAndSelectPeruPlace(candidateObj);
+  }
+
+  function addAndSelectPeruPlace(placeObj) {
+    const idx = peruPlaces.findIndex(p => p.id.startsWith('pe_custom_'));
+    if (idx >= 0) peruPlaces[idx] = placeObj;
+    else peruPlaces.unshift(placeObj);
+
+    selectedPeruId = placeObj.id;
+    updateAll(false);
+    focusPeruMapOnSelected();
+  }
+
+  function cancelUrbanPoint() {
+    pendingUrbanPoint = null;
+    document.getElementById('urbanModal').classList.remove('open');
+    focusPeruMapOnSelected();
+  }
+
+  function confirmUrbanPoint() {
+    document.getElementById('urbanModal').classList.remove('open');
+    if (!pendingUrbanPoint) return;
+
+    if (currentZoneFilter === 'natural') {
+      currentZoneFilter = 'all';
+      document.querySelectorAll('[data-zfilter]').forEach(b => {
+        b.classList.toggle('active', b.dataset.zfilter === 'all');
+      });
+    }
+    addAndSelectPeruPlace(pendingUrbanPoint);
+    pendingUrbanPoint = null;
+  }
+
+  // ============================================================================
+  // 8. EVENTOS DE FILTROS Y CRITERIOS
+  // ============================================================================
+  ['pendiente', 'rugosidad', 'accesibilidad', 'altitud'].forEach(k => {
+    document.getElementById('chk_' + k).addEventListener('change', () => updateAll(false));
+  });
+
+  function setCheckboxes(keys) {
+    ['pendiente', 'rugosidad', 'accesibilidad', 'altitud'].forEach(k => {
+      document.getElementById('chk_' + k).checked = keys.includes(k);
+    });
+    updateAll(true);
+  }
+
+  document.getElementById('preset3Orig').addEventListener('click', () => setCheckboxes(['pendiente', 'rugosidad', 'accesibilidad']));
+  document.getElementById('presetOnlySlope').addEventListener('click', () => setCheckboxes(['pendiente']));
+  document.getElementById('presetOnlyRough').addEventListener('click', () => setCheckboxes(['rugosidad']));
+  document.getElementById('presetOnlyAccess').addEventListener('click', () => setCheckboxes(['accesibilidad']));
+  document.getElementById('presetOnlyAlt').addEventListener('click', () => setCheckboxes(['altitud']));
+
+  document.querySelectorAll('[data-zfilter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentZoneFilter = btn.dataset.zfilter;
+      document.querySelectorAll('[data-zfilter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateAll(true);
+      focusPeruMapOnSelected();
+    });
+  });
+
+  document.getElementById('sortOrderSelect').addEventListener('change', () => updateAll(false));
+
+  // ============================================================================
+  // 9. GENERADOR DEL NOMBRE POR DEFECTO (LUNA/MARTE ESPECÍFICO + LUGAR PUNTERO PERÚ)
+  // ============================================================================
+  function cleanSlug(text) {
+    return String(text || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quitar tildes para nombre de archivo limpio
+      .replace(/\([^)]*\)/g, '') // quitar paréntesis secundarios
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 42);
+  }
+
+  function buildDefaultFilename() {
+    const peruObj = getSelectedPeruObject();
+    const spacePart = selectedSpace.shortName || `${selectedSpace.cuerpo}_${cleanSlug(selectedSpace.nombre)}`;
+    const peruPart = peruObj ? cleanSlug(peruObj.nombre) : 'Peru';
+    return `${spacePart}__${peruPart}.csv`;
+  }
+
+  function openDownloadDialog() {
+    const peruObj = getSelectedPeruObject();
+    const activeCrit = getActiveCriteria().map(c => c.label).join(', ') || 'Ninguno';
+    const zFilterLabel = currentZoneFilter === 'natural' ? 'Solo Naturales' : currentZoneFilter === 'populated' ? 'Solo Pobladas' : 'Mostrar Todo';
+
+    document.getElementById('dlModalTargetName').textContent = `${selectedSpace.cuerpo} — ${selectedSpace.nombre}`;
+    document.getElementById('dlModalPeruName').textContent = peruObj ? peruObj.nombre : '—';
+    document.getElementById('dlModalFiltersSummary').textContent = `Parámetros: [${activeCrit}] · Zona: [${zFilterLabel}]`;
+    document.getElementById('dlModalNotesMirror').value = document.getElementById('userReportText').value;
+
+    const input = document.getElementById('dlFilenameInput');
+    // Poner siempre por defecto el nombre específico de la Luna/Marte + lugar del puntero en Perú antes de editar
+    input.value = buildDefaultFilename().replace(/\.csv$/i, '');
+
+    document.getElementById('downloadModal').classList.add('open');
+    setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 50);
+  }
+
+  function closeDownloadDialog() {
+    document.getElementById('downloadModal').classList.remove('open');
+  }
+
+  // Construye el contenido CSV guardando: lugar espacial, lugares Perú, informe multi-línea seguro y filtros aplicados
+  function generateCSVContent(notesText) {
+    const activeCritKeys = getActiveCriteria().map(c => c.key).join('|');
+    const sortMode = document.getElementById('sortOrderSelect').value;
+
+    // Para que Excel y cualquier lector CSV no partan la fila cuando el usuario presiona Enter en las observaciones,
+    // codificamos los saltos de línea como "\\n" dentro de la celda y los restauramos a saltos reales al cargar.
+    const safeNotes = String(notesText || '').replace(/\r?\n/g, ' \\n ');
+
+    // Ponemos primero el lugar donde está el puntero actualmente para que al recargar se seleccione ese mismo lugar
+    const orderedForSave = [...lastRankedList];
+    const selIdx = orderedForSave.findIndex(x => x.id === selectedPeruId);
+    if (selIdx > 0) {
+      const [selItem] = orderedForSave.splice(selIdx, 1);
+      orderedForSave.unshift(selItem);
+    }
+
+    const rows = [
+      ['nombre', 'cuerpo', 'pendiente', 'rugosidad', 'accesibilidad', 'origen', 'zona', 'lat', 'lon', 'alt', 'similitud', 'criterios_activos', 'filtro_zona', 'orden_lista', 'lugar_seleccionado', 'informe'],
+      // Fila 1: Escenario espacial (Luna o Marte) + Metadatos de filtros + Informe completo
+      [
+        selectedSpace.nombre,
+        selectedSpace.cuerpo,
+        selectedSpace.pendiente,
+        selectedSpace.rugosidad,
+        selectedSpace.accesibilidad,
+        selectedSpace.origen,
+        'Espacial',
+        selectedSpace.lat ?? 0,
+        selectedSpace.lon ?? 0,
+        selectedSpace.alt ?? 2500,
+        100,
+        activeCritKeys,
+        currentZoneFilter,
+        sortMode,
+        getSelectedPeruObject()?.nombre || '',
+        safeNotes
+      ],
+      // Filas siguientes: todos los lugares del Perú
+      ... peruPlaces.map(item => {
+        const evalObj = lastRankedList.find(x => x.id === item.id);
+        const simScore = evalObj ? evalObj.score.toFixed(1) : '0.0';
+        return [
+          item.nombre,
+          'Tierra',
+          item.pendiente,
+          item.rugosidad,
+          item.accesibilidad,
+          item.origen,
+          item.zona === 'populated' ? 'Poblada' : 'Natural',
+          item.lat ?? -7.1895,
+          item.lon ?? -78.5740,
+          item.alt ?? 2500,
+          simScore,
+          '',
+          '',
+          '',
+          item.id === selectedPeruId ? 'ACTIVO' : '',
+          ''
+        ];
+      })
+    ];
+
+    return '\ufeff' + rows.map(row =>
+      row.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(',')
+    ).join('\r\n');
+  }
+
+  function triggerBrowserDownload(filename, csvContent) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function confirmDownloadCSV() {
+    const notes = document.getElementById('dlModalNotesMirror').value.trim();
+    document.getElementById('userReportText').value = notes;
+
+    let rawName = document.getElementById('dlFilenameInput').value.trim() || buildDefaultFilename();
+    if (!rawName.toLowerCase().endsWith('.csv')) rawName += '.csv';
+
+    const csvContent = generateCSVContent(notes);
+    closeDownloadDialog();
+
+    // Si el navegador soporta guardado directo en sistema de archivos, guardamos y retenemos el handle para futuras sobrescrituras
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: rawName,
+          types: [{ description: 'Archivo CSV', accept: { 'text/csv': ['.csv'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(csvContent);
+        await writable.close();
+        currentFileHandle = handle;
+        setCsvLoadedState(true, handle.name);
+        document.getElementById('status').textContent = `✅ Archivo "${handle.name}" guardado en disco.`;
+        showCsvMsg('ok', `✅ Archivo "${handle.name}" guardado. Puedes usar "Sobrescribir CSV actual" para actualizarlo directamente sin crear copias.`);
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+
+    triggerBrowserDownload(rawName, csvContent);
+    document.getElementById('status').textContent = `✅ Archivo "${rawName}" guardado con informe y filtros.`;
+  }
+
+  // Sobrescribe directamente sobre el mismo archivo CSV original en el disco sin descargar copias (1).csv
+  async function overwriteLoadedCSV(fromModal = false) {
+    if (fromModal) {
+      document.getElementById('userReportText').value = document.getElementById('dlModalNotesMirror').value.trim();
+      closeDownloadDialog();
+    }
+    const notes = document.getElementById('userReportText').value.trim();
+    const targetFilename = loadedCsvFilename || buildDefaultFilename();
+    const csvContent = generateCSVContent(notes);
+
+    try {
+      // 1. Si ya tenemos acceso directo al archivo original (abierto o guardado previamente), lo sobrescribimos en el acto
+      if (currentFileHandle && typeof currentFileHandle.createWritable === 'function') {
+        const writable = await currentFileHandle.createWritable();
+        await writable.write(csvContent);
+        await writable.close();
+        document.getElementById('status').textContent = `✅ Archivo original "${currentFileHandle.name}" sobrescrito directamente en disco.`;
+        showCsvMsg('ok', `✅ Se sobrescribió directamente el archivo original "${currentFileHandle.name}" con tus nuevos filtros y observaciones.`);
+        return;
+      }
+
+      // 2. Si aún no teníamos el handle directo pero el navegador soporta selector de archivo del sistema
+      if (typeof window.showSaveFilePicker === 'function') {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: targetFilename,
+          types: [{ description: 'Archivo CSV', accept: { 'text/csv': ['.csv'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(csvContent);
+        await writable.close();
+        currentFileHandle = handle;
+        loadedCsvFilename = handle.name;
+        document.getElementById('csvLoadedFilename').textContent = handle.name;
+        document.getElementById('status').textContent = `✅ Archivo "${handle.name}" sobrescrito directamente en disco.`;
+        showCsvMsg('ok', `✅ Archivo "${handle.name}" sobrescrito correctamente.`);
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+
+    // Respaldo solo si el navegador bloquea la API de archivos locales
+    triggerBrowserDownload(targetFilename, csvContent);
+    document.getElementById('status').textContent = `🔄 Archivo "${targetFilename}" actualizado.`;
+    showCsvMsg('ok', `🔄 Se actualizó "${targetFilename}" con tus nuevas observaciones y filtros.`);
+  }
+
+  // Abre el selector de archivos obteniendo permiso directo de escritura sobre el mismo archivo CSV
+  async function triggerOpenCSV() {
+    if (typeof window.showOpenFilePicker === 'function') {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'Archivo CSV', accept: { 'text/csv': ['.csv'] } }],
+          multiple: false
+        });
+        currentFileHandle = handle;
+        const file = await handle.getFile();
+        const text = await file.text();
+        processLoadedCSVContent(text, file.name);
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    document.getElementById('csvFileInput').click();
+  }
+
+  function showCsvMsg(type, text) {
+    const box = document.getElementById('csvMsg');
+    box.className = 'msg-box ' + type;
+    box.textContent = text;
+  }
+
+  // ============================================================================
+  // 10. LECTOR CSV COMPLETO (SOPORTA SALTOS DE LÍNEA EN OBSERVACIONES Y RESTAURA FILTROS)
+  // ============================================================================
+  function parseFullCSV(text) {
+    const clean = text.replace(/^\ufeff/, '').trim();
+    if (!clean) return [];
+
+    // Detectar separador en la primera línea
+    const firstLineEnd = clean.indexOf('\n');
+    const firstLine = firstLineEnd >= 0 ? clean.slice(0, firstLineEnd) : clean;
+    const sep = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
+
+    // Parser RFC-4180 que respeta saltos de línea dentro de comillas ("...")
+    const rows = [];
+    let currentRow = [];
+    let currentCell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < clean.length; i++) {
+      const ch = clean[i];
+      if (ch === '"') {
+        if (inQuotes && clean[i + 1] === '"') {
+          currentCell += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === sep && !inQuotes) {
+        currentRow.push(currentCell.trim());
+        currentCell = '';
+      } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+        if (ch === '\r' && clean[i + 1] === '\n') i++;
+        currentRow.push(currentCell.trim());
+        if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += ch;
+      }
+    }
+    currentRow.push(currentCell.trim());
+    if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
+    return rows;
+  }
+
+  function processLoadedCSVContent(text, filename) {
+    try {
+      const rows = parseFullCSV(text);
+      if (rows.length < 2) throw new Error('El archivo CSV está vacío.');
+
+      const headers = rows[0].map(h => h.toLowerCase().trim());
+      const needed = ['nombre', 'cuerpo', 'pendiente', 'rugosidad', 'accesibilidad'];
+      const missing = needed.filter(c => !headers.includes(c));
+      if (missing.length) {
+        throw new Error('Faltan columnas requeridas: ' + missing.join(', '));
+      }
+
+      const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
+      const loadedPeru = [];
+      let loadedSpace = null;
+      let restoredReport = '';
+      let restoredCriteria = null;
+      let restoredZoneFilter = null;
+      let restoredSortOrder = null;
+      let restoredSelectedName = '';
+      let explicitActiveId = null;
+
+      for (let r = 1; r < rows.length; r++) {
+        const cols = rows[r];
+        const nombre = (cols[idx.nombre] || '').trim();
+        if (!nombre) continue;
+
+        const rawCuerpo = (cols[idx.cuerpo] || '').trim().toLowerCase();
+        const cuerpo = rawCuerpo === 'luna' ? 'Luna' : rawCuerpo === 'marte' ? 'Marte' : 'Tierra';
+
+        const pend = Number(String(cols[idx.pendiente] ?? 0).replace(',', '.'));
+        const rug = Number(String(cols[idx.rugosidad] ?? 0).replace(',', '.'));
+        const acc = Number(String(cols[idx.accesibilidad] ?? 0).replace(',', '.'));
+
+        if (Number.isNaN(pend) || Number.isNaN(rug) || Number.isNaN(acc)) continue;
+
+        const latVal = idx.lat !== undefined && cols[idx.lat] !== '' ? Number(cols[idx.lat]) : undefined;
+        const lonVal = idx.lon !== undefined && cols[idx.lon] !== '' ? Number(cols[idx.lon]) : undefined;
+        const altVal = idx.alt !== undefined && cols[idx.alt] !== '' ? Number(cols[idx.alt]) : 3000;
+        const origenVal = idx.origen !== undefined && cols[idx.origen] ? cols[idx.origen] : 'CSV IMPORTADO';
+
+        if (idx.informe !== undefined && cols[idx.informe] && !restoredReport) {
+          restoredReport = cols[idx.informe].replace(/\s*\\n\s*/g, '\n');
+        }
+        if (idx.criterios_activos !== undefined && cols[idx.criterios_activos] && !restoredCriteria) {
+          restoredCriteria = cols[idx.criterios_activos].split('|').map(s => s.trim()).filter(Boolean);
+        }
+        if (idx.filtro_zona !== undefined && cols[idx.filtro_zona] && !restoredZoneFilter) {
+          restoredZoneFilter = cols[idx.filtro_zona].trim();
+        }
+        if (idx.orden_lista !== undefined && cols[idx.orden_lista] && !restoredSortOrder) {
+          restoredSortOrder = cols[idx.orden_lista].trim();
+        }
+
+        if (cuerpo === 'Luna' || cuerpo === 'Marte') {
+          if (!loadedSpace) {
+            const presetMatch = SPACE_TARGETS.find(t =>
+              t.nombre.toLowerCase() === nombre.toLowerCase() || t.cuerpo === cuerpo
+            );
+            loadedSpace = {
+              id: 'csv_space_' + r,
+              cuerpo,
+              nombre,
+              shortName: presetMatch ? presetMatch.shortName : `${cuerpo}_${cleanSlug(nombre)}`,
+              lat: latVal !== undefined && !Number.isNaN(latVal) ? latVal : (presetMatch ? presetMatch.lat : 0),
+              lon: lonVal !== undefined && !Number.isNaN(lonVal) ? lonVal : (presetMatch ? presetMatch.lon : 0),
+              zoom: 4,
+              alt: !Number.isNaN(altVal) ? altVal : 2500,
+              deg: Number((pend * 0.35).toFixed(1)),
+              pendiente: pend,
+              rugosidad: rug,
+              accesibilidad: acc,
+              origen: origenVal
+            };
+            if (idx.lugar_seleccionado !== undefined && cols[idx.lugar_seleccionado]) {
+              restoredSelectedName = cols[idx.lugar_seleccionado].trim();
+            }
+          }
+        } else {
+          const zonaRaw = idx.zona !== undefined ? (cols[idx.zona] || '').toLowerCase() : 'natural';
+          const isPop = zonaRaw.includes('pobla') || zonaRaw.includes('urban') || nombre.toLowerCase().includes('urbana') || nombre.toLowerCase().includes('ciudad');
+          const defaultMatch = DEFAULT_PERU_PLACES.find(d => d.nombre.toLowerCase().includes(nombre.toLowerCase().slice(0, 12)));
+          const rowId = 'csv_pe_' + r;
+
+          if (idx.lugar_seleccionado !== undefined && cols[idx.lugar_seleccionado] === 'ACTIVO') {
+            explicitActiveId = rowId;
+          }
+
+          loadedPeru.push({
+            id: rowId,
+            nombre,
+            cuerpo: 'Tierra',
+            zona: isPop ? 'populated' : 'natural',
+            lat: latVal !== undefined && !Number.isNaN(latVal) ? latVal : (defaultMatch ? defaultMatch.lat : -7.1895),
+            lon: lonVal !== undefined && !Number.isNaN(lonVal) ? lonVal : (defaultMatch ? defaultMatch.lon : -78.5740),
+            alt: !Number.isNaN(altVal) ? altVal : (defaultMatch ? defaultMatch.alt : 3000),
+            deg: Number((pend * 0.35).toFixed(1)),
+            pendiente: pend,
+            rugosidad: rug,
+            accesibilidad: acc,
+            origen: origenVal
+          });
+        }
+      }
+
+      if (loadedPeru.length === 0) {
+        throw new Error('El CSV no contiene lugares terrestres para comparar.');
+      }
+
+      peruPlaces = loadedPeru;
+      document.getElementById('userReportText').value = restoredReport;
+
+      if (restoredCriteria && restoredCriteria.length > 0) {
+        ['pendiente', 'rugosidad', 'accesibilidad', 'altitud'].forEach(k => {
+          document.getElementById('chk_' + k).checked = restoredCriteria.includes(k);
+        });
+      }
+
+      if (restoredZoneFilter && ['natural', 'all', 'populated'].includes(restoredZoneFilter)) {
+        currentZoneFilter = restoredZoneFilter;
+      } else if (loadedPeru.some(p => p.zona === 'populated')) {
+        currentZoneFilter = 'all';
+      }
+      document.querySelectorAll('[data-zfilter]').forEach(b => {
+        b.classList.toggle('active', b.dataset.zfilter === currentZoneFilter);
+      });
+
+      if (restoredSortOrder) {
+        const sel = document.getElementById('sortOrderSelect');
+        if ([...sel.options].some(o => o.value === restoredSortOrder)) {
+          sel.value = restoredSortOrder;
+        }
+      }
+
+      if (explicitActiveId) {
+        selectedPeruId = explicitActiveId;
+      } else if (restoredSelectedName) {
+        const foundByName = loadedPeru.find(p => p.nombre.toLowerCase() === restoredSelectedName.toLowerCase());
+        if (foundByName) selectedPeruId = foundByName.id;
+      }
+
+      setCsvLoadedState(true, filename);
+
+      if (loadedSpace) {
+        selectSpaceTarget(loadedSpace, !explicitActiveId && !restoredSelectedName);
+        if (explicitActiveId || restoredSelectedName) {
+          updateAll(false);
+          focusPeruMapOnSelected();
+        }
+      } else {
+        updateAll(true);
+        focusPeruMapOnSelected();
+      }
+
+      showCsvMsg('ok', `✅ CSV "${filename}" cargado: mapa cambiado a ${selectedSpace.cuerpo}, filtros aplicados e informe restaurado.`);
+    } catch (err) {
+      showCsvMsg('err', '❌ No se pudo cargar el CSV: ' + err.message);
+    }
+  }
+
+  document.getElementById('csvFileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentFileHandle = null;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      processLoadedCSVContent(ev.target.result, file.name);
+      e.target.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  // ============================================================================
+  // 11. MODALES DE INFORMACIÓN GENERAL (?)
+  // ============================================================================
+  const HELP_CONTENT = {
+    general: {
+      title: '🚀 Sistema AYNI-ANALOG',
+      html: `
+        <p><strong>AYNI-ANALOG</strong> evalúa cuantitativamente la similitud geomorfológica entre sitios de exploración en la Luna y Marte y terrenos terrestres del Perú.</p>
+        <ul>
+          <li><strong>Mundo 1 (Izquierda):</strong> permite seleccionar coordenadas y sitios de alunizaje/amartizaje en mapas globales de la NASA (misiones <em>LRO</em> y <em>Viking/MOLA</em>).</li>
+          <li><strong>Mundo 2 (Derecha):</strong> analiza terrenos del Perú mediante modelos de elevación <em>NASA SRTM / Terra ASTER</em> y los ordena según su afinidad topográfica.</li>
+        </ul>
+      `
+    },
+    apis: {
+      title: '📡 Arquitectura de Datos y APIs',
+      html: `
+        <p>La aplicación integra servicios cartográficos y altimétricos abiertos en tiempo real:</p>
+        <ul>
+          <li><strong>NASA GIBS (Global Imagery Browse Services):</strong> mosaicos de relieve sombreado <em>ASTER GDEM</em> del satélite Terra.</li>
+          <li><strong>Mosaicos Planetarios LRO / MOLA:</strong> cartografía global de la superficie lunar y marciana.</li>
+          <li><strong>API de Elevación SRTM (Open-Meteo):</strong> consulta de cotas ortométricas en mallas de 3×3 puntos para derivación de pendiente y rugosidad.</li>
+          <li><strong>Geocodificación Inversa (OpenStreetMap Nominatim):</strong> detección automática de infraestructura urbana o vial.</li>
+        </ul>
+      `
+    },
+    calculo: {
+      title: '📐 Extracción de Métricas Satelitales (Matriz 3×3)',
+      html: `
+        <p>Al seleccionar una coordenada terrestre, el sistema muestrea una matriz de <strong>9 puntos satelitales</strong> (centro y 8 vecinos a ~100 m de separación):</p>
+        <div class="grid-9-demo">
+          <div class="grid-9-cell">NO<br>3,912 m</div>
+          <div class="grid-9-cell">N<br>3,915 m</div>
+          <div class="grid-9-cell">NE<br>3,910 m</div>
+          <div class="grid-9-cell">O<br>3,904 m</div>
+          <div class="grid-9-cell center">🎯 CENTRO<br>3,906 m</div>
+          <div class="grid-9-cell">E<br>3,908 m</div>
+          <div class="grid-9-cell">SO<br>3,896 m</div>
+          <div class="grid-9-cell">S<br>3,898 m</div>
+          <div class="grid-9-cell">SE<br>3,901 m</div>
+        </div>
+        <ul>
+          <li><strong>Altitud real (m s.n.m.):</strong> cota directa del punto central obtenida del radar SRTM.</li>
+          <li><strong>Inclinación (Pendiente):</strong> ángulo derivado del gradiente máximo de altura entre el centro y su entorno inmediato, normalizado de 0°–35° a escala 0–100.</li>
+          <li><strong>Rugosidad del relieve:</strong> índice de irregularidad basado en la desviación estándar de las 9 cotas locales.</li>
+          <li><strong>Accesibilidad operativa:</strong> estimación logística ponderada según pendiente e incremento de altitud.</li>
+        </ul>
+      `
+    },
+    mapaEspacial: {
+      title: '🌕🔴 Visor Planetario (Luna y Marte)',
+      html: `
+        <p>Permite alternar entre la cartografía lunar y marciana o seleccionar coordenadas específicas sobre la superficie planetaria. Al cargar un archivo CSV, este visor cambia automáticamente al cuerpo celeste registrado en el archivo.</p>
+      `
+    },
+    mapaPeru: {
+      title: '🇵🇪🏞️ Filtro de Terrenos Naturales vs. Zonas Pobladas',
+      html: `
+        <p>Los ensayos de movilidad espacial requieren terrenos naturales libres de edificaciones y pavimento.</p>
+        <ul>
+          <li>Por defecto, el ranking filtra únicamente <strong>Zonas Naturales Despobladas</strong>.</li>
+          <li>Si el marcador se sitúa sobre un área urbana o vía registrada, el sistema emite una alerta de confirmación antes de incluir el punto como <em>Zona Poblada</em>.</li>
+        </ul>
+      `
+    },
+    criterios: {
+      title: '☑️ Selección Individual o Multivariable de Parámetros',
+      html: `
+        <p>Puedes activar o desactivar cada parámetro de forma independiente para evaluar similitud por un único atributo (ej. solo Inclinación o solo Altitud) o mediante combinación ponderada. Haz clic en el botón <strong>(?)</strong> de cada tarjeta para ver el detalle de su fórmula.</p>
+      `
+    },
+    ranking: {
+      title: '🏆 Ranking Ordenado, Filtros e Informe Integrado',
+      html: `
+        <p>Ordena automáticamente todos los terrenos evaluados de mayor a menor similitud. Al guardar o sobrescribir el CSV, se almacenan tanto las observaciones del informe como los filtros activos y el lugar seleccionado.</p>
+      `
+    }
+  };
+
+  function openHelp(topicKey) {
+    const info = HELP_CONTENT[topicKey] || HELP_CONTENT.general;
+    document.getElementById('helpModalTitle').textContent = info.title;
+    document.getElementById('helpModalBody').innerHTML = info.html;
+    document.getElementById('helpModal').classList.add('open');
+  }
+
+  function closeHelp() {
+    document.getElementById('helpModal').classList.remove('open');
+  }
+
+  document.getElementById('helpModal').addEventListener('click', e => {
+    if (e.target.id === 'helpModal') closeHelp();
+  });
+
+  // Inicializar
+  updateAll(true);
+  initMaps();
+</script>
+</body>
+</html>

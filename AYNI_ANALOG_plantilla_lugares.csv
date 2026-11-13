@@ -1,0 +1,9 @@
+nombre,cuerpo,pendiente,rugosidad,accesibilidad,origen
+"Andes de Cajamarca (Cumbe Mayo)",Tierra,22,62,74,"SATÉLITE SRTM / REFERENCIA"
+"Puna altoandina (Jalca de Cajamarca)",Tierra,12,46,38,"SATÉLITE SRTM / REFERENCIA"
+"Terreno volcánico (Valle de los Volcanes)",Tierra,29,84,31,"SATÉLITE SRTM / REFERENCIA"
+"Desierto de La Joya (Arequipa)",Tierra,9,34,82,"REFERENCIA ANÁLOGO PERÚ"
+"Terreno lunar accidentado (Apolo 16)",Luna,26,78,35,"REFERENCIA LUNAR"
+"Polo Sur Lunar - Cráter Shackleton (Artemis III)",Luna,31,82,28,"REFERENCIA ARTEMIS NASA"
+"Mar de la Tranquilidad (Apolo 11)",Luna,8,28,72,"REFERENCIA LUNAR"
+"Cráter Jezero (Rover Perseverance)",Marte,16,58,48,"REFERENCIA MARTE NASA"
